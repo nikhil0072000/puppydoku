@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4c24a9002cd82e14f8c7e60e4d91ff18, type: 3}
+  m_Name: Level_01
+  m_EditorClassIdentifier: Assembly-CSharp::LevelData
+  gridSize: 4
+  rows:
+  - columns: 00000000000000000100000000000000
+  - columns: 02000000000000000000000000000000
+  - columns: 00000000000000000300000003000000
+  - columns: 00000000000000000000000003000000
+  zoneColors:
+  - {r: 0.8862746, g: 0.70980394, b: 0.2627451, a: 1}
+  - {r: 0.7490196, g: 0.37254903, b: 0.5176471, a: 1}
+  - {r: 0.91372555, g: 0.61960787, b: 0.7372549, a: 1}
+  - {r: 0.52156866, g: 0.43921572, b: 0.76470596, a: 1}
+  prePlacedPuppies:
+  - {x: 2, y: 3}

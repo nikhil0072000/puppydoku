@@ -1,39 +1,165 @@
 using UnityEngine;
+using System;
+using System.Collections;
 
 public class Cell : MonoBehaviour
 {
-    // Static zone colour palette (enough for up to 10 zones)
-    public static readonly Color[] ZoneColors = new Color[]
-    {
-        new Color32(255,182,193,200),  // light pink
-        new Color32(173,216,230,200),  // light blue
-        new Color32(144,238,144,200),  // light green
-        new Color32(255,255,160,200),  // light yellow
-        new Color32(221,160,221,200),  // plum
-        new Color32(244,164,96 ,200),  // sandy brown
-        new Color32(152,251,152,200),  // pale green
-        new Color32(175,238,238,200),  // turquoise
-        new Color32(255,218,185,200),  // peach
-        new Color32(230,230,250,200),  // lavender
-    };
+    // No more static ZoneColors array here – colour comes from outside.
+    public static event Action<Vector2Int> OnCellDoubleTapped;
 
-    [SerializeField] private SpriteRenderer zoneOverlay;   // assigned in prefab
-    public Vector2Int gridPosition { get; private set; }
-    public int zoneID { get; private set; }
+    [SerializeField] private SpriteRenderer zoneOverlay;
+    [SerializeField] private SpriteRenderer xMarkRenderer;
 
-    // Initialise the cell with position and zone
-    public void Init(int x, int y, int zone)
+    public Vector2Int gridPosition;
+    public int zoneID;
+    public bool IsXMarked;
+    public bool IsErrorLocked;
+    public bool isGiven;       // <-- NEW
+
+    private Puppy currentPuppy;
+    private Color originalZoneColor;
+
+    
+    public void Init(int x, int y, int zone, Color zoneColor)   // <-- zoneColor parameter
     {
         gridPosition = new Vector2Int(x, y);
         zoneID = zone;
+        originalZoneColor = zoneColor;   // <-- SAVE COLOR
+        isGiven = false;                     // given state set separately
+        IsErrorLocked = false;
+        IsXMarked = false;
 
-        // Apply zone colour
-        if (zoneOverlay != null && zone >= 0 && zone < ZoneColors.Length)
-            zoneOverlay.color = ZoneColors[zone];
+        if (zoneOverlay != null)
+            zoneOverlay.color = zoneColor;   // directly use the passed colour
         else
-            Debug.LogWarning($"Cell ({x},{y}): invalid zone or missing overlay.");
+            Debug.LogWarning($"Cell ({x},{y}): zoneOverlay missing.");
 
-        // Just for visual check: name the GameObject
+        if (xMarkRenderer != null)
+        {
+            xMarkRenderer.gameObject.SetActive(false);
+            xMarkRenderer.color = Color.white;   // default white X
+        }
+        else
+            Debug.LogWarning($"Cell ({x},{y}): xMarkRenderer missing.");
+
         gameObject.name = $"Cell_{x}_{y}_Zone{zone}";
+    }
+
+    // ---- Single tap: toggle white X ----
+    public void ToggleXMark()
+    {
+        // Can't mark a cell that already has a puppy
+        if (currentPuppy != null)
+        {
+            Debug.Log($"Cell {gridPosition}: already has puppy, X mark not allowed.");
+            return;
+        }
+
+        if (IsErrorLocked)
+        {
+            Debug.Log($"Cell {gridPosition}: locked, cannot toggle X.");
+            return;
+        }
+
+        IsXMarked = !IsXMarked;
+        if (xMarkRenderer != null)
+        {
+            xMarkRenderer.gameObject.SetActive(IsXMarked);
+            xMarkRenderer.color = Color.white;   // always white for toggleable mark
+        }
+        Debug.Log($"Cell {gridPosition}: white X mark toggled to {IsXMarked}");
+    }
+
+    // ---- Show permanent red cross (error feedback) ----
+    public void ShowPermanentRedCross()
+    {
+        if (xMarkRenderer == null) return;
+
+        // Set the X mark to red and ensure it's enabled
+        xMarkRenderer.color = new Color32(255, 73, 0, 255); // FF4900
+        xMarkRenderer.gameObject.SetActive(true);
+        IsXMarked = false;
+        IsErrorLocked = true;   // lock the cell from further input
+
+        Debug.Log($"Cell {gridPosition}: permanent red cross, input locked.");
+    }
+
+    // ---- Double tap: raise event to attempt placement ----
+    public void OnDoubleTap()
+    {
+        if (currentPuppy != null)
+        {
+            Debug.Log($"Cell {gridPosition}: puppy already present, double tap ignored.");
+            return;
+        }
+
+        if (IsErrorLocked)
+        {
+            Debug.Log($"Cell {gridPosition}: locked, cannot place.");
+            return;
+        }
+
+        Debug.Log($"Cell {gridPosition}: requesting puppy placement.");
+        OnCellDoubleTapped?.Invoke(gridPosition);
+    }
+
+    // ---- General placement attempt (called from InputManager) ----
+    public void AttemptPlacement()
+    {
+        // This simply triggers to same double‑tap flow
+        OnDoubleTap();
+    }
+
+    // ---- Place a puppy (called by GameManager) ----
+    public Puppy PlacePuppy(GameObject puppyPrefab)
+    {
+        if (currentPuppy != null)
+        {
+            Debug.LogWarning($"Cell {gridPosition}: already has a puppy!");
+            return null;
+        }
+
+        // Clear any X mark (whether white or red)
+        IsXMarked = false;
+        if (xMarkRenderer != null)
+        {
+            xMarkRenderer.gameObject.SetActive(false);
+            xMarkRenderer.color = Color.white;   // reset colour
+        }
+
+        Vector3 worldPos = transform.position;
+        worldPos.z = -0.1f;   // slightly in front of the grid
+
+        GameObject pupObj = Instantiate(puppyPrefab, worldPos, Quaternion.identity, transform);
+        Puppy pup = pupObj.GetComponent<Puppy>();
+        if (pup == null)
+        {
+            Debug.LogError("Puppy prefab is missing Puppy script!");
+            Destroy(pupObj);
+            return null;
+        }
+
+        pup.Init(gridPosition);
+        currentPuppy = pup;
+
+        // Dim the zone color to show occupation
+        if (zoneOverlay != null)
+            zoneOverlay.color = Color.Lerp(originalZoneColor, Color.gray, 0.5f);
+
+        return pup;
+    }
+
+    public Puppy GetPuppy() => currentPuppy;
+
+    // (Not used yet, but ready for later)
+    public void RemovePuppy()
+    {
+        if (currentPuppy != null)
+        {
+            Destroy(currentPuppy.gameObject);
+            currentPuppy = null;
+            if (zoneOverlay != null)
+                zoneOverlay.color = originalZoneColor;
+        }
     }
 }
