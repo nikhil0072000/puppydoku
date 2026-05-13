@@ -1,0 +1,14 @@
+{
+  "levelId": "Level_1",
+  "difficulty": "Easy",
+  "gridSize": 4,
+  "colorData": [
+    [0, 0, 1, 0],
+    [2, 0, 0, 0],
+    [0, 0, 3, 3],
+    [0, 0, 0, 3]
+  ],
+  "prePlaced": [
+    { "x": 2, "y": 3 }
+  ]
+}

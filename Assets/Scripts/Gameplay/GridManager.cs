@@ -2,26 +2,32 @@ using UnityEngine;
 
 public class GridManager : MonoBehaviour
 {
-    [SerializeField] private GameObject cellPrefab;
-    [SerializeField] private Transform gridParent;
+    [SerializeField] private GameObject cellPrefab; // the Cell prefab
+    [SerializeField] private Transform gridParent; // where to spawn cells
 
     private int gridSize;
     private Cell[,] cells;
-    private int[,] zoneMap;
+    private int[,] zoneMap; // stored for later rule checks
 
     public int GridSize => gridSize;
 
-    public void GenerateGrid(int size, int[,] map, Color[] zoneColors)
+    public void GenerateGrid(int size, int[,] zoneMapData, Color[] zoneColors)
     {
         gridSize = size;
-        zoneMap = map;
+        zoneMap = zoneMapData;
 
         // Clear old children
-        foreach (Transform child in gridParent) Destroy(child.gameObject);
+        foreach (Transform child in gridParent)
+            Destroy(child.gameObject);
 
         cells = new Cell[gridSize, gridSize];
 
         SpriteRenderer prefabRenderer = cellPrefab.GetComponent<SpriteRenderer>();
+        if (prefabRenderer == null)
+        {
+            Debug.LogError("Cell prefab missing SpriteRenderer!");
+            return;
+        }
         float cellSize = prefabRenderer.bounds.size.x;
 
         float startX = -(gridSize - 1) * cellSize / 2f;
@@ -31,20 +37,31 @@ public class GridManager : MonoBehaviour
         {
             for (int y = 0; y < gridSize; y++)
             {
-                int zone = map[x, y];
+                int zoneID = zoneMap[x, y];
                 Vector3 pos = new Vector3(startX + x * cellSize, startY - y * cellSize, 0);
                 GameObject obj = Instantiate(cellPrefab, pos, Quaternion.identity, gridParent);
                 Cell cell = obj.GetComponent<Cell>();
                 if (cell != null)
                 {
-                    Color col = (zone >= 0 && zone < zoneColors.Length) ? zoneColors[zone] : Color.white;
-                    cell.Init(x, y, zone, col);
+                    // Pass the actual colour for this zone
+                    Color col = (zoneID >= 0 && zoneID < zoneColors.Length) ? zoneColors[zoneID] : Color.white;
+                    cell.Init(x, y, zoneID, col);
                     cells[x, y] = cell;
+                }
+                else
+                {
+                    Debug.LogError("Cell prefab does not contain Cell script!");
                 }
             }
         }
     }
 
-    public Cell GetCell(int x, int y) => cells[x, y];
+    public Cell GetCell(int x, int y)
+    {
+        if (cells != null && x >= 0 && x < gridSize && y >= 0 && y < gridSize)
+            return cells[x, y];
+        return null;
+    }
+
     public int[,] GetZoneMap() => zoneMap;
 }

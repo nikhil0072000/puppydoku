@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e8f1edc2368a1db4cb8f3621cb752066, type: 3}
+  m_Name: GridConfig
+  m_EditorClassIdentifier: Assembly-CSharp::GridConfig
+  colorMap:
+  - id: 0
+    color: {r: 0.8862746, g: 0.70980394, b: 0.2627451, a: 1}
+  - id: 1
+    color: {r: 0.91372555, g: 0.61960787, b: 0.7372549, a: 1}
+  - id: 2
+    color: {r: 0.7490196, g: 0.37254903, b: 0.5176471, a: 1}
+  - id: 3
+    color: {r: 0.5254902, g: 0.43921572, b: 0.7686275, a: 1}
