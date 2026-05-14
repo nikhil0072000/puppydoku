@@ -1907,6 +1907,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1553528589}
   - component: {fileID: 1553528588}
+  - component: {fileID: 1553528590}
   m_Layer: 0
   m_Name: Grid Manager
   m_TagString: Untagged
@@ -1944,6 +1945,30 @@ Transform:
   - {fileID: 436110720}
   m_Father: {fileID: 1770422076}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1553528590
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1553528587}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f21537d8f736485449c82f5eca0d95eb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::GridAnimator
+  staggerDelay: 0.04
+  scaleDuration: 0.18
+  overshootScale: 1.08
+  settleDuration: 0.1
+  scaleEase: 27
+  settleEase: 9
+  boardContainer: {fileID: 0}
+  boardScaleStart: 0.95
+  boardFadeDuration: 0.25
+  puppyScaleDuration: 0.2
+  puppyOvershoot: 1.1
+  puppySettleDuration: 0.1
 --- !u!1 &1597632889
 GameObject:
   m_ObjectHideFlags: 0
@@ -2154,6 +2179,7 @@ MonoBehaviour:
   gridManager: {fileID: 1553528588}
   puppyPrefab: {fileID: 6097796963914252411, guid: 8e014ef8ef92e0046bd50d18be9044e9, type: 3}
   hudManager: {fileID: 632748153}
+  gridAnimator: {fileID: 1553528590}
 --- !u!4 &1770422076
 Transform:
   m_ObjectHideFlags: 0

@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 public class GridManager : MonoBehaviour
@@ -64,4 +65,29 @@ public class GridManager : MonoBehaviour
     }
 
     public int[,] GetZoneMap() => zoneMap;
+
+    /// <summary>
+    /// Returns all cells ordered by diagonal distance (x+y), then by x, so an
+    /// intro animation steps through the grid in a wave from the top-left.
+    /// One-shot helper used at level load — not a hot path.
+    /// </summary>
+    public List<Cell> GetCellsInDiagonalOrder()
+    {
+        List<Cell> ordered = new List<Cell>(gridSize * gridSize);
+        if (cells == null) return ordered;
+
+        int maxDiagonal = (gridSize - 1) * 2;
+        for (int d = 0; d <= maxDiagonal; d++)
+        {
+            int xStart = Mathf.Max(0, d - (gridSize - 1));
+            int xEnd = Mathf.Min(d, gridSize - 1);
+            for (int x = xStart; x <= xEnd; x++)
+            {
+                int y = d - x;
+                Cell cell = cells[x, y];
+                if (cell != null) ordered.Add(cell);
+            }
+        }
+        return ordered;
+    }
 }

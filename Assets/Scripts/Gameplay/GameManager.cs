@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -11,6 +12,7 @@ public class GameManager : MonoBehaviour
     [SerializeField] private GridManager gridManager;
     [SerializeField] private GameObject puppyPrefab;
     [SerializeField] private HUDManager hudManager;
+    [SerializeField] private GridAnimator gridAnimator;
 
     [Header("Level Data")]
     // Removed ScriptableObject level array. Levels are now loaded via LevelLoader (JSON).
@@ -43,7 +45,7 @@ public class GameManager : MonoBehaviour
         // Load level from LevelLoader singleton (JSON based)
         if (LevelLoader.Instance != null && LevelLoader.Instance.CurrentLevelData != null)
         {
-            LoadLevelFromJson(LevelLoader.Instance.CurrentLevelData);
+            StartCoroutine(LoadLevelWithAnimation(LevelLoader.Instance.CurrentLevelData));
         }
         else
         {
@@ -119,72 +121,85 @@ public class GameManager : MonoBehaviour
     //     }
     // }
     public void LoadLevelFromJson(LevelDataModel model)
-{
-    int size = model.GetSafeGridSize();
-    int[,] map = model.GetSafeColorData();   // now contains ColorID values directly
-    zoneMap = map;
-
-    // Count unique colour IDs in the grid
-    HashSet<int> uniqueColors = new HashSet<int>();
-    for (int y = 0; y < size; y++)
-        for (int x = 0; x < size; x++)
-            uniqueColors.Add(map[x, y]);
-
-    totalColorCount = model.GetSafeWinCondition();
-
-    // Each zone ID already equals its colour group index
-    // Build zoneToColorIndex (size = maxZoneId+1)
-    int maxZone = 0;
-    foreach (int id in uniqueColors) if (id > maxZone) maxZone = id;
-    zoneToColorIndex = new int[maxZone + 1];
-    for (int i = 0; i <= maxZone; i++) zoneToColorIndex[i] = i;
-
-    // Build visual colours array
-    GridConfig config = Resources.Load<GridConfig>("GridConfig");
-    if (config == null) Debug.LogError("GridConfig missing!");
-
-    Color[] zoneColors = new Color[maxZone + 1];
-    for (int i = 0; i <= maxZone; i++)
     {
-        if (config != null)
-            zoneColors[i] = config.GetColor((ColorID)i);
-        else
-            zoneColors[i] = Color.white;
+        StartCoroutine(LoadLevelWithAnimation(model));
     }
 
-    // Generate grid
-    gridManager.GenerateGrid(size, zoneMap, zoneColors);
-
-    // Reset state
-    placedPuppies.Clear();
-    lives = MaxLives;
-    gameOver = false;
-    LevelComplete = false;
-    LevelFailed = false;
-
-    // Place pre‑placed puppies
-    foreach (Vector2Int pos in model.GetSafePrePlaced())
+    /// <summary>
+    /// Builds the grid from JSON, plays the staggered intro animation, then
+    /// pops in any pre-placed puppies and refreshes the HUD.
+    /// </summary>
+    private IEnumerator LoadLevelWithAnimation(LevelDataModel model)
     {
-        Cell cell = gridManager.GetCell(pos.x, pos.y);
-        if (cell != null)
+        int size = model.GetSafeGridSize();
+        int[,] map = model.GetSafeColorData();   // now contains ColorID values directly
+        zoneMap = map;
+
+        // Count unique colour IDs in the grid
+        HashSet<int> uniqueColors = new HashSet<int>();
+        for (int y = 0; y < size; y++)
+            for (int x = 0; x < size; x++)
+                uniqueColors.Add(map[x, y]);
+
+        totalColorCount = model.GetSafeWinCondition();
+
+        // Each zone ID already equals its colour group index
+        int maxZone = 0;
+        foreach (int id in uniqueColors) if (id > maxZone) maxZone = id;
+        zoneToColorIndex = new int[maxZone + 1];
+        for (int i = 0; i <= maxZone; i++) zoneToColorIndex[i] = i;
+
+        // Build visual colours array
+        GridConfig config = Resources.Load<GridConfig>("GridConfig");
+        if (config == null) Debug.LogError("GridConfig missing!");
+
+        Color[] zoneColors = new Color[maxZone + 1];
+        for (int i = 0; i <= maxZone; i++)
         {
-            PuzzleObject pup = cell.PlacePuppy(puppyPrefab);
-            if (pup != null)
-            {
-                cell.isGiven = true;
-                placedPuppies.Add(pos);
-            }
+            zoneColors[i] = (config != null) ? config.GetColor((ColorID)i) : Color.white;
         }
-    }
 
-    if (hudManager != null)
-    {
-        hudManager.UpdateHearts(lives);
-        hudManager.UpdateProgress(placedPuppies.Count, totalColorCount);
-    }
+        // Generate grid (cells will be scaled to zero by the animator before showing)
+        gridManager.GenerateGrid(size, zoneMap, zoneColors);
 
-    Debug.Log($"Level loaded: {size}x{size}, unique colours: {totalColorCount}, pre-placed: {placedPuppies.Count}");
-}
+        // Reset state
+        placedPuppies.Clear();
+        lives = MaxLives;
+        gameOver = false;
+        LevelComplete = false;
+        LevelFailed = false;
+
+        // Play the staggered diagonal intro
+        if (gridAnimator != null)
+        {
+            List<Cell> ordered = gridManager.GetCellsInDiagonalOrder();
+            bool animationDone = false;
+            yield return StartCoroutine(gridAnimator.AnimateGrid(ordered, () => animationDone = true));
+            while (!animationDone) yield return null;
+        }
+
+        // Place pre‑placed puppies after the grid is fully visible.
+        // Cell.PlacePuppy plays its own pop-in animation, so no extra call needed here.
+        foreach (Vector2Int pos in model.GetSafePrePlaced())
+        {
+            Cell cell = gridManager.GetCell(pos.x, pos.y);
+            if (cell == null) continue;
+
+            PuzzleObject pup = cell.PlacePuppy(puppyPrefab);
+            if (pup == null) continue;
+
+            cell.isGiven = true;
+            placedPuppies.Add(pos);
+        }
+
+        if (hudManager != null)
+        {
+            hudManager.UpdateHearts(lives);
+            hudManager.UpdateProgress(placedPuppies.Count, totalColorCount);
+        }
+
+        Debug.Log($"Level loaded: {size}x{size}, unique colours: {totalColorCount}, pre-placed: {placedPuppies.Count}");
+    }
 
     // Called when a cell is double-tapped
     private void OnCellDoubleTapped(Vector2Int pos)
@@ -233,7 +248,8 @@ public class GameManager : MonoBehaviour
         }
         else
         {
-            // Invalid placement → permanent red cross, lose a life
+            // Invalid placement → permanent red cross (cell drives its own
+            // heart-break effect internally) + lose a life on the HUD.
             cell.ShowPermanentRedCross();
             lives--;
             Debug.Log($"Invalid placement at {pos}. Lives left: {lives}");
