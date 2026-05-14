@@ -10,6 +10,7 @@ public class LevelDataModel
     public int gridSize = 4;
     public int[][] colorData;            // jagged array for JSON
     public PrePlacedData[] prePlaced;    // array of {x, y}
+    public int winCondition = -1;        // -1 means auto-calculate from colorData
 
     // ----- Safe accessors with fallbacks -----
     public int GetSafeGridSize() => gridSize > 0 ? gridSize : 4;
@@ -40,6 +41,20 @@ public class LevelDataModel
                 map[x, y] = row[x];
         }
         return map;
+    }
+
+    public int GetSafeWinCondition()
+    {
+        if (winCondition > 0)
+            return winCondition;
+
+        int[,] map = GetSafeColorData();
+        HashSet<int> unique = new HashSet<int>();
+        int size = GetSafeGridSize();
+        for (int y = 0; y < size; y++)
+            for (int x = 0; x < size; x++)
+                unique.Add(map[x, y]);
+        return unique.Count;
     }
 
     public Vector2Int[] GetSafePrePlaced()

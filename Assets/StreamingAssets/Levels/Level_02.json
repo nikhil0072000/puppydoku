@@ -1,0 +1,38 @@
+{
+  "levelId": "Level_Test",
+  "difficulty": "Easy",
+  "gridSize": 4,
+  "colorData": [
+    [
+      0,
+      0,
+      1,
+      0
+    ],
+    [
+      2,
+      0,
+      0,
+      0
+    ],
+    [
+      0,
+      0,
+      3,
+      3
+    ],
+    [
+      0,
+      0,
+      0,
+      3
+    ]
+  ],
+  "prePlaced": [
+    {
+      "x": 3,
+      "y": 2
+    }
+  ],
+  "winCondition": 4
+}

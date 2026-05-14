@@ -109,7 +109,7 @@ public class GameManager : MonoBehaviour
     //         Cell cell = gridManager.GetCell(pos.x, pos.y);
     //         if (cell != null)
     //         {
-    //             Puppy pup = cell.PlacePuppy(puppyPrefab);
+    //             PuzzleObject pup = cell.PlacePuppy(puppyPrefab);
     //             if (pup != null)
     //             {
     //                 cell.isGiven = true;
@@ -130,7 +130,7 @@ public class GameManager : MonoBehaviour
         for (int x = 0; x < size; x++)
             uniqueColors.Add(map[x, y]);
 
-    totalColorCount = uniqueColors.Count;
+    totalColorCount = model.GetSafeWinCondition();
 
     // Each zone ID already equals its colour group index
     // Build zoneToColorIndex (size = maxZoneId+1)
@@ -168,7 +168,7 @@ public class GameManager : MonoBehaviour
         Cell cell = gridManager.GetCell(pos.x, pos.y);
         if (cell != null)
         {
-            Puppy pup = cell.PlacePuppy(puppyPrefab);
+            PuzzleObject pup = cell.PlacePuppy(puppyPrefab);
             if (pup != null)
             {
                 cell.isGiven = true;
@@ -214,7 +214,7 @@ public class GameManager : MonoBehaviour
         if (GameRules.IsPlacementValid(pos, placedPuppies, zoneMap, zoneToColorIndex))
         {
             // Valid placement
-            Puppy pup = cell.PlacePuppy(puppyPrefab);
+            PuzzleObject pup = cell.PlacePuppy(puppyPrefab);
             if (pup != null)
             {
                 placedPuppies.Add(pos);
@@ -253,7 +253,8 @@ public class GameManager : MonoBehaviour
         gameOver = true;
         LevelComplete = true;
         Debug.Log("🎉 Level Complete!");
-        // Later we'll show a win popup
+        if (PopupManager.Instance != null)
+            PopupManager.Instance.ShowWin();
     }
 
     private void Lose()
@@ -261,7 +262,8 @@ public class GameManager : MonoBehaviour
         gameOver = true;
         LevelFailed = true;
         Debug.Log("💀 Game Over - out of lives.");
-        // Later we'll show a retry popup
+        if (PopupManager.Instance != null)
+            PopupManager.Instance.ShowLose();
     }
 
     // // Helper to convert hex to Color

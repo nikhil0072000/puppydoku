@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -21,8 +22,13 @@ public class LevelLoader : MonoBehaviour
     [Header("Levels")]
     [SerializeField] private string levelsFolder = "Levels";
 
+    private readonly List<int> availableLevels = new();
+    private int currentListPosition = -1;
+
     public LevelDataModel CurrentLevelData { get; private set; }
     public Difficulty CurrentDifficulty { get; private set; } = Difficulty.Easy;
+    public bool HasNextLevel => currentListPosition >= 0 && currentListPosition < availableLevels.Count - 1;
+
     private bool levelLoaded = false;
 
     void Awake()
@@ -38,24 +44,64 @@ public class LevelLoader : MonoBehaviour
             return;
         }
 
-        // Start loading Level 1 as soon as the Loading scene appears
-        StartCoroutine(LoadLevelRoutine(1));
+        ScanAvailableLevels();
+
+        if (availableLevels.Count == 0)
+        {
+            Debug.LogError("No level files found in StreamingAssets/Levels! Falling back to index 1.");
+            availableLevels.Add(1);
+        }
+
+        // Initial load lands on Home so the player can press Play.
+        StartCoroutine(LoadLevelRoutine(availableLevels[0], homeSceneName));
     }
 
-    private IEnumerator LoadLevelRoutine(int levelIndex)
+    private void ScanAvailableLevels()
     {
+        availableLevels.Clear();
+
+        string folder = Path.Combine(Application.streamingAssetsPath, levelsFolder);
+        if (!Directory.Exists(folder))
+        {
+            Debug.LogWarning($"Levels folder not found: {folder}");
+            return;
+        }
+
+        string[] files = Directory.GetFiles(folder, "Level_*.json");
+        for (int i = 0; i < files.Length; i++)
+        {
+            string name = Path.GetFileNameWithoutExtension(files[i]); // e.g., "Level_01"
+            string numberPart = name["Level_".Length..];
+            if (int.TryParse(numberPart, out int index))
+                availableLevels.Add(index);
+        }
+
+        availableLevels.Sort();
+        Debug.Log($"Found {availableLevels.Count} level(s): {string.Join(", ", availableLevels)}");
+    }
+
+    private IEnumerator LoadLevelRoutine(int levelIndex, string targetScene)
+    {
+        currentListPosition = availableLevels.IndexOf(levelIndex);
+        if (currentListPosition < 0)
+        {
+            Debug.LogError($"Level index {levelIndex} not in available list; defaulting to first entry.");
+            currentListPosition = 0;
+            levelIndex = availableLevels[0];
+        }
+
         if (progressSlider != null) progressSlider.value = 0f;
         if (progressText != null) progressText.text = "0%";
 
-        // --- Simulate initial work ---
+        // --- Simulate initial work (fills bar 0% -> 30%) ---
         for (float i = 0f; i <= 0.3f; i += Time.deltaTime)
         {
-            if (progressSlider != null) progressSlider.value = i / 0.3f;
-            if (progressText != null) progressText.text = Mathf.RoundToInt((i / 0.3f) * 100) + "%";
+            if (progressSlider != null) progressSlider.value = i;
+            if (progressText != null) progressText.text = Mathf.RoundToInt(i * 100) + "%";
             yield return null;
         }
 
-        // --- Actual JSON loading (fast, but we'll pad it) ---
+        // --- Actual JSON loading ---
         string fileName = $"Level_{levelIndex:D2}";
         string filePath = Path.Combine(Application.streamingAssetsPath, levelsFolder, $"{fileName}.json");
 
@@ -94,12 +140,35 @@ public class LevelLoader : MonoBehaviour
         if (progressText != null) progressText.text = "100%";
         levelLoaded = true;
 
-        Debug.Log("Level loaded successfully!");
-        // After loading, switch to the Home scene where the player can press Play
-        SceneManager.LoadScene(homeSceneName);
+        Debug.Log($"Level {levelIndex} loaded. Switching to '{targetScene}'.");
+        SceneManager.LoadScene(targetScene);
     }
 
-    // Called from Home scene Play button
+    // Called from Home scene Play button — always starts from the first level.
+    public void LoadFirstAvailableLevel()
+    {
+        if (availableLevels.Count == 0)
+        {
+            Debug.LogError("No levels available to load!");
+            return;
+        }
+        StartCoroutine(LoadLevelRoutine(availableLevels[0], gameSceneName));
+    }
+
+    // Called from the win popup's Next Level button.
+    public void LoadNextLevel()
+    {
+        if (!HasNextLevel)
+        {
+            Debug.Log("No next level available.");
+            return;
+        }
+
+        int nextIndex = availableLevels[currentListPosition + 1];
+        StartCoroutine(LoadLevelRoutine(nextIndex, gameSceneName));
+    }
+
+    // Legacy entry point — kept for any existing wiring that still calls it.
     public void GoToGameScene()
     {
         if (!levelLoaded)
@@ -137,5 +206,4 @@ public class LevelLoader : MonoBehaviour
             fallback.colorData[i] = new int[size];
         return fallback;
     }
-
 }

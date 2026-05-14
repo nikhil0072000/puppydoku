@@ -16,7 +16,7 @@ public class Cell : MonoBehaviour
     public bool IsErrorLocked;
     public bool isGiven;       // <-- NEW
 
-    private Puppy currentPuppy;
+    private PuzzleObject currentPuppy;
     private Color originalZoneColor;
 
     
@@ -111,7 +111,7 @@ public class Cell : MonoBehaviour
     }
 
     // ---- Place a puppy (called by GameManager) ----
-    public Puppy PlacePuppy(GameObject puppyPrefab)
+    public PuzzleObject PlacePuppy(GameObject puppyPrefab)
     {
         if (currentPuppy != null)
         {
@@ -131,10 +131,10 @@ public class Cell : MonoBehaviour
         worldPos.z = -0.1f;   // slightly in front of the grid
 
         GameObject pupObj = Instantiate(puppyPrefab, worldPos, Quaternion.identity, transform);
-        Puppy pup = pupObj.GetComponent<Puppy>();
+        PuzzleObject pup = pupObj.GetComponent<PuzzleObject>();
         if (pup == null)
         {
-            Debug.LogError("Puppy prefab is missing Puppy script!");
+            Debug.LogError("Prefab is missing PuzzleObject script!");
             Destroy(pupObj);
             return null;
         }
@@ -149,7 +149,7 @@ public class Cell : MonoBehaviour
         return pup;
     }
 
-    public Puppy GetPuppy() => currentPuppy;
+    public PuzzleObject GetPuppy() => currentPuppy;
 
     // (Not used yet, but ready for later)
     public void RemovePuppy()

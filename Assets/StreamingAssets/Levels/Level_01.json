@@ -10,5 +10,6 @@
   ],
   "prePlaced": [
     { "x": 2, "y": 3 }
-  ]
+  ],
+  "winCondition": 4
 }
