@@ -1,22 +1,10 @@
 fileFormatVersion: 2
-guid: 246dc2b3bf3eed949b0457e69976920a
+guid: c7d3f38b8825fa940bc04d1df3b26ba3
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: -4777433338726097617
-    second: dog Sad_0
-  - first:
-      213: 3174882410357948359
-    second: dog Sad_1
-  - first:
-      213: -6211015906735277715
-    second: dog Sad_2
-  - first:
-      213: -3779000450762806168
-    second: dog Sad_3
-  - first:
-      213: -5137073409389886911
-    second: dog Sad_4
+      213: -1892357722297587914
+    second: I4_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -121,83 +109,43 @@ TextureImporter:
     ignorePlatformSupport: 0
     androidETC2FallbackOverride: 0
     forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: WebGL
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: iOS
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
   spriteSheet:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: dog Sad_0
+      name: I4_0
       rect:
         serializedVersion: 2
         x: 0
-        y: 615
-        width: 17
-        height: 25
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: -1
-      bones: []
-      spriteID: f2d5f1bb0b523bdb0800000000000000
-      internalID: -4777433338726097617
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: dog Sad_1
-      rect:
-        serializedVersion: 2
-        x: 8
-        y: 440
-        width: 1528
-        height: 584
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: -1
-      bones: []
-      spriteID: 7cf75012bb27f0c20800000000000000
-      internalID: 3174882410357948359
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: dog Sad_2
-      rect:
-        serializedVersion: 2
-        x: 0
-        y: 266
-        width: 18
-        height: 21
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: -1
-      bones: []
-      spriteID: d693eb0b0f90ec9a0800000000000000
-      internalID: -6211015906735277715
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: dog Sad_3
-      rect:
-        serializedVersion: 2
-        x: 11
         y: 0
-        width: 1525
-        height: 441
+        width: 240
+        height: 160
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -206,30 +154,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 86ced3eac1b4e8bc0800000000000000
-      internalID: -3779000450762806168
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: dog Sad_4
-      rect:
-        serializedVersion: 2
-        x: 82
-        y: 94
-        width: 7
-        height: 7
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: -1
-      bones: []
-      spriteID: 142063893f275b8b0800000000000000
-      internalID: -5137073409389886911
+      spriteID: 6372c7e7daefcb5e0800000000000000
+      internalID: -1892357722297587914
       vertices: []
       indices: 
       edges: []
@@ -248,11 +174,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      dog Sad_0: -4777433338726097617
-      dog Sad_1: 3174882410357948359
-      dog Sad_2: -6211015906735277715
-      dog Sad_3: -3779000450762806168
-      dog Sad_4: -5137073409389886911
+      I4_0: -1892357722297587914
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

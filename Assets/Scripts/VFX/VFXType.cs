@@ -6,5 +6,6 @@ public enum VFXType
     Pop,
     Dust,
     RedCross,
-    Sparkle
+    Sparkle,
+    Wink
 }

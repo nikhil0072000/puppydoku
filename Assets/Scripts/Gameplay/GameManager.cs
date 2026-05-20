@@ -233,6 +233,7 @@ public class GameManager : MonoBehaviour
             if (pup != null)
             {
                 placedPuppies.Add(pos);
+                pup.PlayWink();
                 Debug.Log($"Puppy placed at {pos}");
 
                 // Update UI
@@ -251,6 +252,7 @@ public class GameManager : MonoBehaviour
             // Invalid placement → permanent red cross (cell drives its own
             // heart-break effect internally) + lose a life on the HUD.
             cell.ShowPermanentRedCross();
+            PuppyRegistry.PlaySadOnAll();
             lives--;
             Debug.Log($"Invalid placement at {pos}. Lives left: {lives}");
 

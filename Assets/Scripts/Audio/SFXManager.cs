@@ -51,16 +51,25 @@ public class SFXManager : MonoBehaviour
 
     public void Play(SFXType type)
     {
-        if (sfxConfig == null) return;
+        if (sfxConfig == null)
+        {
+#if UNITY_EDITOR
+            Debug.LogWarning($"[SFXManager] Play({type}) ignored — sfxConfig is null.", this);
+#endif
+            return;
+        }
         if (!sfxConfig.TryGetEntry(type, out SFXConfig.SFXEntry entry) || entry.clip == null)
         {
-            Debug.LogWarning($"SFXManager: No clip for {type}.");
+            Debug.LogWarning($"[SFXManager] No clip for {type}.", this);
             return;
         }
 
         AudioSource src = FindFreeSource();
         if (src == null)
         {
+#if UNITY_EDITOR
+            Debug.LogWarning($"[SFXManager] Pool exhausted, dropping {type} (clip='{entry.clip.name}').", this);
+#endif
             // Pool exhausted — skip rather than thrash performance.
             return;
         }
@@ -70,6 +79,10 @@ public class SFXManager : MonoBehaviour
         if (sfxMixerGroup != null)
             src.outputAudioMixerGroup = sfxMixerGroup;
         src.Play();
+
+#if UNITY_EDITOR
+        Debug.Log($"[SFXManager] Play {type} → clip='{entry.clip.name}', source='{src.gameObject.name}', vol={src.volume:0.00}, mixer='{(sfxMixerGroup != null ? sfxMixerGroup.name : "none")}'", src);
+#endif
     }
 
     private AudioSource FindFreeSource()

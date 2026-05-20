@@ -30,15 +30,25 @@ public class VFXManager : MonoBehaviour
 
     public void Play(VFXType type, Vector3 position, Quaternion rotation)
     {
-        if (vfxConfig == null) return;
+        if (vfxConfig == null)
+        {
+#if UNITY_EDITOR
+            Debug.LogWarning($"[VFXManager] Play({type}) ignored — vfxConfig is null.", this);
+#endif
+            return;
+        }
         if (!vfxConfig.TryGetEntry(type, out VFXConfig.VFXEntry entry) || entry.prefab == null)
         {
-            Debug.LogWarning($"VFXManager: No prefab for {type}.");
+            Debug.LogWarning($"[VFXManager] No prefab for {type}.", this);
             return;
         }
 
         GameObject instance = Instantiate(entry.prefab, position, rotation, vfxParent);
         if (entry.lifetime > 0f)
             Destroy(instance, entry.lifetime);
+
+#if UNITY_EDITOR
+        Debug.Log($"[VFXManager] Play {type} → prefab='{entry.prefab.name}', spawned='{instance.name}', pos={position}, parent='{(vfxParent != null ? vfxParent.name : "<root>")}', lifetime={entry.lifetime:0.00}s", instance);
+#endif
     }
 }

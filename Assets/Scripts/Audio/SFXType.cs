@@ -8,5 +8,7 @@ public enum SFXType
     Win,
     Lose,
     ButtonClick,
-    Confetti
+    Confetti,
+    Wink,
+    Sad
 }
