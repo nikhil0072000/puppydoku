@@ -58,6 +58,10 @@ public class InputManager : MonoBehaviour
         if (GameManager.LevelComplete || GameManager.LevelFailed)
             return;
 
+        // Suppress grid taps while a power-up overlay (e.g. the Bulb hint) is open.
+        if (GameManager.InputLocked)
+            return;
+
         Ray ray = mainCam.ScreenPointToRay(screenPosition);
         RaycastHit2D hit = Physics2D.Raycast(ray.origin, ray.direction);
         if (hit.collider == null) return;

@@ -1,12 +1,19 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using PuppyPuzzle.PowerUps;
 
 public class GameManager : MonoBehaviour
 {
     public static GameManager Instance { get; private set; }
     public static bool LevelComplete = false;
     public static bool LevelFailed = false;
+
+    /// <summary>
+    /// While true, grid input is suppressed (e.g. the Bulb hint overlay is open).
+    /// Checked by <see cref="InputManager"/>. Reset on level (re)load.
+    /// </summary>
+    public static bool InputLocked = false;
 
     [Header("References")]
     [SerializeField] private GridManager gridManager;
@@ -31,7 +38,23 @@ public class GameManager : MonoBehaviour
     private int lives;
     private bool gameOver = false;
 
+    // Most recently placed puppy — used by the Bulb hint as its focus cell.
+    private Vector2Int? lastPlacedCell;
+
+    // Every puppy in placement order: givens first (initial), then player/reveal
+    // placements appended. The Bulb hint walks this in reverse (recent → initial).
+    private readonly List<Vector2Int> placementOrder = new List<Vector2Int>();
+
     private const int MaxLives = 3;
+
+    // ---- Read-only state exposed to the power-up system ----
+    public bool IsGameOver => gameOver;
+    public GridManager Grid => gridManager;
+    public int GridWidth => zoneMap != null ? zoneMap.GetLength(0) : 0;
+    public int GridHeight => zoneMap != null ? zoneMap.GetLength(1) : 0;
+
+    /// <summary>Placed puppies in placement order (givens first, newest last).</summary>
+    public IReadOnlyList<Vector2Int> PlacementOrder => placementOrder;
 
     void Awake()
     {
@@ -164,10 +187,13 @@ public class GameManager : MonoBehaviour
 
         // Reset state
         placedPuppies.Clear();
+        placementOrder.Clear();
+        lastPlacedCell = null;
         lives = MaxLives;
         gameOver = false;
         LevelComplete = false;
         LevelFailed = false;
+        InputLocked = false;
 
         // Play the staggered diagonal intro
         if (gridAnimator != null)
@@ -190,6 +216,7 @@ public class GameManager : MonoBehaviour
 
             cell.isGiven = true;
             placedPuppies.Add(pos);
+            placementOrder.Add(pos);
         }
 
         if (hudManager != null)
@@ -228,24 +255,7 @@ public class GameManager : MonoBehaviour
         // Use colour-based rule check
         if (GameRules.IsPlacementValid(pos, placedPuppies, zoneMap, zoneToColorIndex))
         {
-            // Valid placement
-            PuzzleObject pup = cell.PlacePuppy(puppyPrefab);
-            if (pup != null)
-            {
-                placedPuppies.Add(pos);
-                pup.PlayWink();
-                Debug.Log($"Puppy placed at {pos}");
-
-                // Update UI
-                if (hudManager != null)
-                    hudManager.UpdateProgress(placedPuppies.Count, totalColorCount);
-
-                // Win check
-                if (placedPuppies.Count == totalColorCount)
-                {
-                    Win();
-                }
-            }
+            PlacePuppyAt(pos);
         }
         else
         {
@@ -264,6 +274,112 @@ public class GameManager : MonoBehaviour
                 Lose();
             }
         }
+    }
+
+    /// <summary>
+    /// Places a puppy at <paramref name="pos"/> without re-checking rules (the caller
+    /// must have validated). Handles the pop-in + wink, placement bookkeeping, HUD
+    /// refresh and win check. Shared by manual placement and the Puppy power-up.
+    /// </summary>
+    private bool PlacePuppyAt(Vector2Int pos)
+    {
+        Cell cell = gridManager.GetCell(pos.x, pos.y);
+        if (cell == null) return false;
+
+        PuzzleObject pup = cell.PlacePuppy(puppyPrefab);
+        if (pup == null) return false;
+
+        placedPuppies.Add(pos);
+        placementOrder.Add(pos);
+        lastPlacedCell = pos;
+        pup.PlayWink();
+        Debug.Log($"Puppy placed at {pos}");
+
+        if (hudManager != null)
+            hudManager.UpdateProgress(placedPuppies.Count, totalColorCount);
+
+        if (placedPuppies.Count == totalColorCount)
+            Win();
+
+        return true;
+    }
+
+    /// <summary>
+    /// Puppy power-up: solves the board from the current state and auto-places one
+    /// guaranteed-correct puppy. Returns false (place nothing) if the game is over,
+    /// the board can't be completed from here, or every solution cell is already filled.
+    /// </summary>
+    public bool RevealCorrectPuppy()
+    {
+        if (gameOver) return false;
+
+        if (!TryGetNextSolutionCell(out Vector2Int pos))
+        {
+            Debug.LogWarning("RevealCorrectPuppy: no empty solution cell available from the current board state.");
+            return false;
+        }
+
+        return PlacePuppyAt(pos);
+    }
+
+    /// <summary>
+    /// Places a puppy at <paramref name="pos"/> only if it's empty and a legal move.
+    /// Used by the Bulb hint's deduction step (Apply on the highlighted cell). Returns
+    /// false if the game is over, the cell is taken, or the move would break the rules.
+    /// </summary>
+    public bool PlacePuppyAtIfValid(Vector2Int pos)
+    {
+        if (gameOver) return false;
+
+        Cell cell = gridManager.GetCell(pos.x, pos.y);
+        if (cell == null || cell.GetPuppy() != null) return false;
+
+        if (!GameRules.IsPlacementValid(pos, placedPuppies, zoneMap, zoneToColorIndex))
+            return false;
+
+        return PlacePuppyAt(pos);
+    }
+
+    /// <summary>
+    /// Solves the board from the current state and returns the first solution cell
+    /// that is still empty. Used by the Puppy power-up (to place it) and by the Bulb
+    /// hint's final "a puppy goes here" step (to highlight it). False if no completion
+    /// exists or every solution cell is already filled.
+    /// </summary>
+    public bool TryGetNextSolutionCell(out Vector2Int cell)
+    {
+        cell = default;
+
+        if (!PuzzleSolver.TrySolve(zoneMap, zoneToColorIndex, totalColorCount, placedPuppies, out var solution))
+            return false;
+
+        foreach (Vector2Int pos in solution)
+        {
+            if (placedPuppies.Contains(pos)) continue;
+
+            Cell c = gridManager.GetCell(pos.x, pos.y);
+            if (c == null || c.GetPuppy() != null) continue;
+
+            cell = pos;
+            return true;
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// The cell the Bulb hint should focus on: the most recently placed puppy, or
+    /// any pre-placed/given puppy as a fallback on a fresh level. Null if the board
+    /// has no puppies at all.
+    /// </summary>
+    public Vector2Int? GetHintFocusCell()
+    {
+        if (lastPlacedCell.HasValue) return lastPlacedCell;
+
+        foreach (Vector2Int pos in placedPuppies)
+            return pos; // any puppy will do as a fallback
+
+        return null;
     }
 
     private void Win()

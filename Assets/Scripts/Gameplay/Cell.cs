@@ -12,6 +12,8 @@ public class Cell : MonoBehaviour
     [SerializeField] private SpriteRenderer line1;
     [SerializeField] private SpriteRenderer line2;
     [SerializeField] private Transform shadowTransform;   // optional, may be null
+    [Tooltip("Optional gold/glow sprite child shown on the Bulb-hint focus cell. If null, the white overlay is tinted gold as a fallback.")]
+    [SerializeField] private SpriteRenderer highlightOverlay;
     [Tooltip("One-shot heart-break effect played during invalid-placement feedback. Optional.")]
     [SerializeField] private HeartUI heartBreakEffect;
 
@@ -95,6 +97,23 @@ public class Cell : MonoBehaviour
     private Vector3 line1BaseScale;
     private Vector3 line2BaseScale;
 
+    // ---- Hint power-up state (Bulb) ----
+    [Header("Hint Power-Up")]
+    [Tooltip("Alpha of the ghost (preview) X lines before the player presses Apply.")]
+    [Range(0f, 1f)]
+    [SerializeField] private float xPreviewAlpha = 0.4f;
+    [Tooltip("Colour of the focus-cell glow when the white overlay is used as the fallback highlight.")]
+    [SerializeField] private Color hintFocusColor = new Color32(255, 200, 60, 255); // warm gold
+    [Tooltip("How dark non-relevant cells get dimmed during a hint (0 = unchanged, 1 = black).")]
+    [Range(0f, 1f)]
+    [SerializeField] private float hintDimAmount = 0.6f;
+
+    private bool isXPreviewing;   // ghost X shown, not yet committed
+    private bool isDimmed;
+    private Color preDimZoneColor;
+    private SpriteRenderer[] puppyRenderers; // captured when dimming, to dim the puppy too
+    private Color[] puppyOriginalColors;     // their colours before dimming, to restore exactly
+
     public void Init(int x, int y, int zone, Color zoneColor)
     {
         gridPosition = new Vector2Int(x, y);
@@ -133,6 +152,12 @@ public class Cell : MonoBehaviour
             line2BaseScale = line2.transform.localScale;
             line2.gameObject.SetActive(false);
         }
+
+        if (highlightOverlay != null)
+            highlightOverlay.gameObject.SetActive(false);
+
+        isXPreviewing = false;
+        isDimmed = false;
 
         gameObject.name = $"Cell_{x}_{y}_Zone{zone}";
     }
@@ -411,6 +436,145 @@ public class Cell : MonoBehaviour
 
     public void AttemptPlacement() => OnDoubleTap();
 
+    // ---- Hint power-up (Bulb): focus glow, dimming, ghost X preview ----
+
+    /// <summary>True when this cell can receive a hint preview X (empty, not given, not error-locked).</summary>
+    public bool CanReceiveHint => currentPuppy == null && !isGiven && !IsErrorLocked;
+
+    /// <summary>Pulsing gold glow marking the puppy the hint is reasoning from.</summary>
+    public void ShowHintFocusGlow()
+    {
+        SpriteRenderer glow = highlightOverlay != null ? highlightOverlay : whiteOverlay;
+        if (glow == null) return;
+
+        glow.gameObject.SetActive(true);
+        glow.DOKill();
+        glow.transform.DOKill();
+
+        Color c = (highlightOverlay != null) ? glow.color : hintFocusColor;
+        c.a = 0f;
+        glow.color = c;
+
+        // Fade in, then breathe.
+        glow.DOFade(0.9f, 0.2f).SetLink(gameObject, LinkBehaviour.KillOnDestroy)
+            .OnComplete(() =>
+                glow.DOFade(0.45f, 0.7f)
+                    .SetLoops(-1, LoopType.Yoyo)
+                    .SetEase(Ease.InOutSine)
+                    .SetLink(gameObject, LinkBehaviour.KillOnDestroy));
+    }
+
+    public void ClearHintFocusGlow()
+    {
+        SpriteRenderer glow = highlightOverlay != null ? highlightOverlay : whiteOverlay;
+        if (glow == null) return;
+
+        glow.DOKill();
+        glow.transform.DOKill();
+        Color c = glow.color; c.a = 0f; glow.color = c;
+        if (highlightOverlay != null) highlightOverlay.gameObject.SetActive(false);
+    }
+
+    /// <summary>Dims (or restores) this cell — including any puppy on it — to push it
+    /// into the background while the hint focuses elsewhere.</summary>
+    public void SetDimmed(bool dim)
+    {
+        if (dim == isDimmed) return;
+        isDimmed = dim;
+
+        if (dim)
+        {
+            if (zoneOverlay != null)
+            {
+                preDimZoneColor = zoneOverlay.color;
+                zoneOverlay.DOColor(Color.Lerp(preDimZoneColor, Color.black, hintDimAmount), 0.2f)
+                           .SetLink(gameObject, LinkBehaviour.KillOnDestroy);
+            }
+            if (currentPuppy != null)
+            {
+                puppyRenderers = currentPuppy.GetComponentsInChildren<SpriteRenderer>();
+                puppyOriginalColors = new Color[puppyRenderers.Length];
+                for (int i = 0; i < puppyRenderers.Length; i++)
+                {
+                    puppyOriginalColors[i] = puppyRenderers[i].color;
+                    puppyRenderers[i].DOColor(Color.Lerp(puppyOriginalColors[i], Color.black, hintDimAmount), 0.2f)
+                                     .SetLink(puppyRenderers[i].gameObject, LinkBehaviour.KillOnDestroy);
+                }
+            }
+        }
+        else
+        {
+            if (zoneOverlay != null)
+                zoneOverlay.DOColor(preDimZoneColor, 0.2f).SetLink(gameObject, LinkBehaviour.KillOnDestroy);
+            if (puppyRenderers != null)
+            {
+                for (int i = 0; i < puppyRenderers.Length; i++)
+                    if (puppyRenderers[i] != null)
+                        puppyRenderers[i].DOColor(puppyOriginalColors[i], 0.2f)
+                                         .SetLink(puppyRenderers[i].gameObject, LinkBehaviour.KillOnDestroy);
+                puppyRenderers = null;
+                puppyOriginalColors = null;
+            }
+        }
+    }
+
+    /// <summary>Draws a semi-transparent ghost X (suggested mark) without committing it.</summary>
+    public void ShowXPreview()
+    {
+        if (!CanReceiveHint || isXPreviewing || IsXMarked) return;
+        isXPreviewing = true;
+
+        DrawLine(line1, line1BaseScale, xPreviewAlpha);
+        DrawLine(line2, line2BaseScale, xPreviewAlpha);
+    }
+
+    /// <summary>Turns the ghost X into a permanent white X (equivalent to a player tap).</summary>
+    public void CommitXPreview()
+    {
+        if (!isXPreviewing) return;
+        isXPreviewing = false;
+        IsXMarked = true;
+
+        FadeLineToOpaque(line1);
+        FadeLineToOpaque(line2);
+    }
+
+    /// <summary>Removes the ghost X if it was never applied.</summary>
+    public void ClearXPreview()
+    {
+        if (!isXPreviewing) return;
+        isXPreviewing = false;
+
+        Sequence seq = DOTween.Sequence();
+        seq.SetLink(gameObject, LinkBehaviour.KillOnDestroy);
+        if (line1 != null) seq.Join(line1.transform.DOScaleX(0f, 0.1f).SetEase(Ease.InQuad));
+        if (line2 != null) seq.Join(line2.transform.DOScaleX(0f, 0.1f).SetEase(Ease.InQuad));
+        seq.OnComplete(() =>
+        {
+            if (line1 != null) line1.gameObject.SetActive(false);
+            if (line2 != null) line2.gameObject.SetActive(false);
+        });
+    }
+
+    private void DrawLine(SpriteRenderer line, Vector3 baseScale, float alpha)
+    {
+        if (line == null) return;
+        line.gameObject.SetActive(true);
+        Color c = Color.white; c.a = alpha;
+        line.color = c;
+        line.transform.DOKill();
+        line.transform.localScale = new Vector3(0f, baseScale.y, baseScale.z);
+        line.transform.DOScaleX(baseScale.x, lineDrawDuration).SetEase(lineDrawEase)
+            .SetLink(gameObject, LinkBehaviour.KillOnDestroy);
+    }
+
+    private void FadeLineToOpaque(SpriteRenderer line)
+    {
+        if (line == null) return;
+        line.DOKill();
+        line.DOFade(1f, 0.2f).SetLink(gameObject, LinkBehaviour.KillOnDestroy);
+    }
+
     private void KillAllTweens()
     {
         transform.DOKill();
@@ -419,9 +583,10 @@ public class Cell : MonoBehaviour
             whiteOverlay.transform.DOKill();
             whiteOverlay.DOKill();
         }
-        if (line1 != null) line1.transform.DOKill();
-        if (line2 != null) line2.transform.DOKill();
+        if (line1 != null) { line1.transform.DOKill(); line1.DOKill(); }
+        if (line2 != null) { line2.transform.DOKill(); line2.DOKill(); }
         if (shadowTransform != null) shadowTransform.DOKill();
+        if (highlightOverlay != null) { highlightOverlay.transform.DOKill(); highlightOverlay.DOKill(); }
     }
 
     private void OnDestroy()
