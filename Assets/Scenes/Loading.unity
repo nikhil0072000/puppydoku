@@ -2569,6 +2569,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: Puppy
       objectReference: {fileID: 0}
+    - target: {fileID: 633740796731822192, guid: 4fcec00176ab92a4ea11e839001bd329, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 8334497302961443742, guid: 4fcec00176ab92a4ea11e839001bd329, type: 3}
       propertyPath: m_LocalPosition.x
       value: -0.05

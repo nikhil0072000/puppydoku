@@ -152,8 +152,10 @@ MonoBehaviour:
   applyButton: {fileID: 1361078909}
   cancelButton: {fileID: 1472579735}
   tutorialText: {fileID: 80409048}
-  tutorialMessage: This puppy's row, column and diagonals can't hold another puppy.
+  eliminationMessage: This puppy's row, column and diagonals can't hold another puppy.
     Apply to mark them with an X.
+  deductionMessage: By elimination, a puppy must go in the highlighted cell. Apply
+    to place it there.
   stagger: 0.04
 --- !u!4 &12453041
 Transform:
@@ -610,9 +612,9 @@ RectTransform:
   - {fileID: 254123745}
   m_Father: {fileID: 632748152}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 0, y: 0}
-  m_AnchoredPosition: {x: 0, y: 0}
+  m_AnchorMin: {x: 0, y: 1}
+  m_AnchorMax: {x: 0, y: 1}
+  m_AnchoredPosition: {x: 550, y: -152.61134}
   m_SizeDelta: {x: 100, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!1 &121065400
@@ -1393,7 +1395,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &466383416
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2149,9 +2151,9 @@ RectTransform:
   - {fileID: 395846647}
   m_Father: {fileID: 632748152}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 0, y: 0}
-  m_AnchoredPosition: {x: 0, y: 0}
+  m_AnchorMin: {x: 0, y: 1}
+  m_AnchorMax: {x: 0, y: 1}
+  m_AnchoredPosition: {x: 700, y: -152.61134}
   m_SizeDelta: {x: 200, y: 50}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &886128460
@@ -2946,6 +2948,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::GridManager
   cellPrefab: {fileID: 7695247103707196783, guid: 6a1d2da71e0c0514aaf2f24cf859adc0, type: 3}
   gridParent: {fileID: 436110720}
+  screenCoverageFraction: 0.48
+  extraScaleMultiplier: 1
+  cellSpacingFraction: 0.1
+  manualCellSizeOverride: 0
 --- !u!4 &1553528589
 Transform:
   m_ObjectHideFlags: 0

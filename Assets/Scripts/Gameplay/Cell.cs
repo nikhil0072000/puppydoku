@@ -20,6 +20,8 @@ public class Cell : MonoBehaviour
     [Header("Cell Scale (prefab default = 0.3)")]
     [Tooltip("Idle scale of the cell root. Should match the prefab.")]
     [SerializeField] private Vector3 restingScale = new Vector3(0.3f, 0.3f, 0.3f);
+    /// <summary>Idle scale of the cell root (read-only, exposed for GridManager's auto-size detection).</summary>
+    public Vector3 RestingScale => restingScale;
     [Tooltip("Uniform scale at the bottom of the tap-press compression.")]
     [SerializeField] private float tapCompressScale = 0.26f;
     [Tooltip("Uniform scale at the top of the rebound overshoot before settling.")]
