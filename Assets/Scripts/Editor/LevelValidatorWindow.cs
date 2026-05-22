@@ -127,6 +127,30 @@ public class LevelValidatorWindow : EditorWindow
                 }
             }
 
+            Vector2Int[] solution = model.GetSafeSolution();
+            if (solution.Length > 0)
+            {
+                if (solution.Length != winTarget)
+                    errors.Add($"Solution length {solution.Length} does not match win condition {winTarget}.");
+
+                var solutionSet = new HashSet<Vector2Int>();
+                foreach (Vector2Int pos in solution)
+                {
+                    if (pos.x < 0 || pos.x >= size || pos.y < 0 || pos.y >= size)
+                        errors.Add($"Solution position {pos} out of bounds.");
+                    if (solutionSet.Contains(pos))
+                        errors.Add($"Duplicate solution position {pos} detected.");
+                    else
+                        solutionSet.Add(pos);
+                }
+
+                foreach (Vector2Int prePos in preArray)
+                {
+                    if (!solutionSet.Contains(prePos))
+                        errors.Add($"Pre-placed puppy {prePos} is not included in the hidden solution.");
+                }
+            }
+
             if (errors.Count > 0)
             {
                 errorCount++;

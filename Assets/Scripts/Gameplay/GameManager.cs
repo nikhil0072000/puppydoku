@@ -33,6 +33,8 @@ public class GameManager : MonoBehaviour
     private int[,] zoneMap;
     private int[] zoneToColorIndex;          // NEW - mapping zoneID → colour index
     private int totalColorCount;             // NEW - number of unique colours (win target)
+    private Vector2Int[] hiddenSolution;      // Optional authored solution loaded from level JSON
+    private HashSet<Vector2Int> hiddenSolutionSet;
 
     private HashSet<Vector2Int> placedPuppies = new HashSet<Vector2Int>();
     private int lives;
@@ -55,6 +57,8 @@ public class GameManager : MonoBehaviour
 
     /// <summary>Placed puppies in placement order (givens first, newest last).</summary>
     public IReadOnlyList<Vector2Int> PlacementOrder => placementOrder;
+    public bool HasHiddenSolution => hiddenSolutionSet != null && hiddenSolutionSet.Count > 0;
+    public bool IsHiddenSolutionCell(Vector2Int pos) => hiddenSolutionSet != null && hiddenSolutionSet.Contains(pos);
 
     void Awake()
     {
@@ -157,6 +161,8 @@ public class GameManager : MonoBehaviour
         int size = model.GetSafeGridSize();
         int[,] map = model.GetSafeColorData();   // now contains ColorID values directly
         zoneMap = map;
+        hiddenSolution = model.GetSafeSolution();
+        hiddenSolutionSet = (hiddenSolution != null) ? new HashSet<Vector2Int>(hiddenSolution) : null;
 
         // Count unique colour IDs in the grid
         HashSet<int> uniqueColors = new HashSet<int>();
@@ -252,6 +258,21 @@ public class GameManager : MonoBehaviour
             return;
         }
 
+        if (HasHiddenSolution && !IsHiddenSolutionCell(pos))
+        {
+            cell.ShowPermanentRedCross();
+            PuppyRegistry.PlaySadOnAll();
+            lives--;
+            Debug.Log($"Invalid placement at {pos} (not part of hidden solution). Lives left: {lives}");
+
+            if (hudManager != null)
+                hudManager.UpdateHearts(lives);
+
+            if (lives <= 0)
+                Lose();
+            return;
+        }
+
         // Use colour-based rule check
         if (GameRules.IsPlacementValid(pos, placedPuppies, zoneMap, zoneToColorIndex))
         {
@@ -334,6 +355,9 @@ public class GameManager : MonoBehaviour
         Cell cell = gridManager.GetCell(pos.x, pos.y);
         if (cell == null || cell.GetPuppy() != null) return false;
 
+        if (HasHiddenSolution && !IsHiddenSolutionCell(pos))
+            return false;
+
         if (!GameRules.IsPlacementValid(pos, placedPuppies, zoneMap, zoneToColorIndex))
             return false;
 
@@ -349,6 +373,33 @@ public class GameManager : MonoBehaviour
     public bool TryGetNextSolutionCell(out Vector2Int cell)
     {
         cell = default;
+
+        if (HasHiddenSolution)
+        {
+            bool allPlacedAreValid = true;
+            foreach (Vector2Int pos in placedPuppies)
+            {
+                if (!IsHiddenSolutionCell(pos))
+                {
+                    allPlacedAreValid = false;
+                    break;
+                }
+            }
+
+            if (allPlacedAreValid)
+            {
+                foreach (Vector2Int pos in hiddenSolution)
+                {
+                    if (placedPuppies.Contains(pos)) continue;
+
+                    Cell c = gridManager.GetCell(pos.x, pos.y);
+                    if (c == null || c.GetPuppy() != null) continue;
+
+                    cell = pos;
+                    return true;
+                }
+            }
+        }
 
         if (!PuzzleSolver.TrySolve(zoneMap, zoneToColorIndex, totalColorCount, placedPuppies, out var solution))
             return false;

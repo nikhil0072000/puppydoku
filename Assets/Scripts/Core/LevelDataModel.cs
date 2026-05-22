@@ -10,6 +10,7 @@ public class LevelDataModel
     public int gridSize = 4;
     public int[][] colorData;            // jagged array for JSON
     public PrePlacedData[] prePlaced;    // array of {x, y}
+    public PrePlacedData[] solution;    // hidden solved puppy positions
     public int winCondition = -1;        // -1 means auto-calculate from colorData
 
     // ----- Safe accessors with fallbacks -----
@@ -62,6 +63,16 @@ public class LevelDataModel
         if (prePlaced == null) return new Vector2Int[0];
         List<Vector2Int> result = new List<Vector2Int>();
         foreach (var pp in prePlaced)
+            if (pp != null)
+                result.Add(new Vector2Int(pp.x, pp.y));
+        return result.ToArray();
+    }
+
+    public Vector2Int[] GetSafeSolution()
+    {
+        if (solution == null) return new Vector2Int[0];
+        List<Vector2Int> result = new List<Vector2Int>();
+        foreach (var pp in solution)
             if (pp != null)
                 result.Add(new Vector2Int(pp.x, pp.y));
         return result.ToArray();

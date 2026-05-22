@@ -3,6 +3,7 @@ using UnityEditor;
 using System.IO;
 using System.Collections.Generic;
 using Newtonsoft.Json;
+using PuppyPuzzle.PowerUps;
 
 public class LevelEditorWindow : EditorWindow
 {
@@ -16,6 +17,7 @@ public class LevelEditorWindow : EditorWindow
     private int selectedColorId = 0;   // current brush colour (ColorID enum value)
     private bool isPuppyMode = false; // toggle between Paint / Pre-Place
     private HashSet<Vector2Int> prePlacedPositions = new HashSet<Vector2Int>();
+    private Vector2Int[] hiddenSolution = null;
     private Vector2 scrollPos;
 
     // ---------- Color palette (taken from GridConfig at runtime) ----------
@@ -76,6 +78,7 @@ public class LevelEditorWindow : EditorWindow
             gridSize = newSize;
             colorData = new int[gridSize, gridSize];
             prePlacedPositions.Clear();
+            hiddenSolution = null;
         }
 
         EditorGUILayout.Space();
@@ -166,6 +169,20 @@ public class LevelEditorWindow : EditorWindow
             EditorGUILayout.LabelField($"Pre-placed puppies: {positions}");
         }
 
+        if (hiddenSolution != null && hiddenSolution.Length > 0)
+        {
+            string solutionPositions = string.Join(", ", System.Linq.Enumerable.Select(hiddenSolution, pos => $"({pos.x},{pos.y})"));
+            EditorGUILayout.LabelField($"Hidden solution stored: {hiddenSolution.Length} positions");
+            EditorGUILayout.LabelField(solutionPositions, EditorStyles.wordWrappedLabel);
+        }
+
+        EditorGUILayout.Space();
+
+        if (GUILayout.Button("Generate Hidden Solution", GUILayout.Height(30)))
+        {
+            GenerateHiddenSolution();
+        }
+
         EditorGUILayout.Space();
 
         // --- Buttons ---
@@ -174,6 +191,7 @@ public class LevelEditorWindow : EditorWindow
         {
             colorData = new int[gridSize, gridSize];
             prePlacedPositions.Clear();
+            hiddenSolution = null;
         }
         GUI.backgroundColor = Color.green;
         if (GUILayout.Button("Save to JSON", GUILayout.Height(30)))
@@ -195,6 +213,47 @@ public class LevelEditorWindow : EditorWindow
         return unique.Count;
     }
 
+    void GenerateHiddenSolution()
+    {
+        int[,] zoneMap = new int[gridSize, gridSize];
+        int maxZone = -1;
+        for (int y = 0; y < gridSize; y++)
+        {
+            for (int x = 0; x < gridSize; x++)
+            {
+                zoneMap[x, y] = colorData[x, y];
+                if (zoneMap[x, y] > maxZone) maxZone = zoneMap[x, y];
+            }
+        }
+
+        int[] zoneToColorIndex = new int[maxZone + 1];
+        for (int i = 0; i <= maxZone; i++)
+            zoneToColorIndex[i] = i;
+
+        var alreadyPlaced = new HashSet<Vector2Int>(prePlacedPositions);
+        if (!PuzzleSolver.TrySolve(zoneMap, zoneToColorIndex, CountUniqueColors(), alreadyPlaced, out var solution))
+        {
+            EditorUtility.DisplayDialog("Hidden Solution", "No valid hidden solution could be found for this puzzle.", "OK");
+            hiddenSolution = null;
+            return;
+        }
+
+        hiddenSolution = solution.ToArray();
+        EditorUtility.DisplayDialog("Hidden Solution", $"Hidden solution generated with {hiddenSolution.Length} puppies.", "OK");
+    }
+
+    PrePlacedData[] ConvertSolutionToData(Vector2Int[] solution)
+    {
+        if (solution == null) return null;
+
+        var result = new PrePlacedData[solution.Length];
+        for (int i = 0; i < solution.Length; i++)
+        {
+            result[i] = new PrePlacedData { x = solution[i].x, y = solution[i].y };
+        }
+        return result;
+    }
+
     void SaveLevelToJson()
     {
         int uq = CountUniqueColors();
@@ -207,6 +266,7 @@ public class LevelEditorWindow : EditorWindow
             gridSize = gridSize,
             colorData = new int[gridSize][],
             prePlaced = new PrePlacedData[prePlacedPositions.Count],
+            solution = hiddenSolution != null ? ConvertSolutionToData(hiddenSolution) : null,
             winCondition = uq
         };
 

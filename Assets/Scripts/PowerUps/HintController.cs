@@ -23,7 +23,7 @@ namespace PuppyPuzzle.PowerUps
     /// </summary>
     public class HintController : PowerUpBase
     {
-        private enum HintMode { Elimination, Deduction }
+        private enum HintMode { Elimination, Deduction, Invalidation }
 
         [Header("UI")]
         [Tooltip("Root of the hint overlay (dim backdrop + Apply/Cancel + tutorial text). Toggled on during the hint.")]
@@ -41,6 +41,11 @@ namespace PuppyPuzzle.PowerUps
         [Tooltip("Shown when everything is marked and the hint points to where a puppy goes (deduction step).")]
         [SerializeField] private string deductionMessage =
             "By elimination, a puppy must go in the highlighted cell. Apply to place it there.";
+
+        [TextArea]
+        [Tooltip("Shown when no puppies are placed: mark every cell that is not part of the hidden solution.")]
+        [SerializeField] private string invalidationMessage =
+            "These cells are not part of the hidden solution. Apply to mark them with X's.";
 
         [Header("Timing")]
         [Tooltip("Stagger between each ghost-X / commit animation for a cascading feel.")]
@@ -80,8 +85,37 @@ namespace PuppyPuzzle.PowerUps
             int w = gm.GridWidth;
             int h = gm.GridHeight;
 
-            // 1) Walk puppies newest-first; act on the first one with unmarked cells.
+            // 1) If the board is fresh and a hidden solution exists, mark all non-solution cells.
             IReadOnlyList<Vector2Int> puppies = gm.PlacementOrder;
+            if (puppies.Count == 0 && gm.HasHiddenSolution)
+            {
+                var invalidCells = new List<Cell>();
+                var invalidSet = new HashSet<Vector2Int>();
+                for (int x = 0; x < w; x++)
+                {
+                    for (int y = 0; y < h; y++)
+                    {
+                        var pos = new Vector2Int(x, y);
+                        if (gm.IsHiddenSolutionCell(pos))
+                            continue;
+
+                        Cell c = gm.Grid.GetCell(x, y);
+                        if (c != null && c.CanReceiveHint)
+                        {
+                            invalidCells.Add(c);
+                            invalidSet.Add(pos);
+                        }
+                    }
+                }
+
+                if (invalidCells.Count > 0)
+                {
+                    BeginInvalidation(gm, invalidCells, invalidSet, w, h);
+                    return true;
+                }
+            }
+
+            // 2) Walk puppies newest-first; act on the first one with unmarked cells.
             for (int i = puppies.Count - 1; i >= 0; i--)
             {
                 Vector2Int puppyPos = puppies[i];
@@ -148,6 +182,24 @@ namespace PuppyPuzzle.PowerUps
             }
         }
 
+        private void BeginInvalidation(GameManager gm, List<Cell> invalidCells, HashSet<Vector2Int> invalidSet, int w, int h)
+        {
+            _mode = HintMode.Invalidation;
+            _isActive = true;
+            GameManager.InputLocked = true;
+
+            DimAllExcept(gm, w, h, pos => invalidSet.Contains(pos));
+
+            _previewCells.Clear();
+            _previewCells.AddRange(invalidCells);
+
+            if (tutorialText != null) tutorialText.text = invalidationMessage;
+            OpenOverlay(showApply: true);
+            SetButtons(apply: true, cancel: true);
+
+            StartCoroutine(StaggeredPreview());
+        }
+
         // ---- Deduction step ----
 
         private void BeginDeduction(GameManager gm, Vector2Int target, int w, int h)
@@ -203,12 +255,12 @@ namespace PuppyPuzzle.PowerUps
         {
             if (!_isActive) return;
 
-            if (_mode == HintMode.Elimination)
+            if (_mode == HintMode.Elimination || _mode == HintMode.Invalidation)
             {
                 foreach (Cell cell in _previewCells)
                     cell.ClearXPreview();
 
-                // Backing out of the eliminations shouldn't cost the player.
+                // Backing out of the eliminations/invalidation shouldn't cost the player.
                 if (PowerUpManager.Instance != null)
                     PowerUpManager.Instance.GrantChance(PowerUpType.Hint);
             }
