@@ -22,6 +22,9 @@ public class Cell : MonoBehaviour
     [SerializeField] private Vector3 restingScale = new Vector3(0.3f, 0.3f, 0.3f);
     /// <summary>Idle scale of the cell root (read-only, exposed for GridManager's auto-size detection).</summary>
     public Vector3 RestingScale => restingScale;
+    private Vector3 runtimeRestingScale;
+    private Vector3 CurrentRestingScale => runtimeRestingScale == Vector3.zero ? restingScale : runtimeRestingScale;
+
     [Tooltip("Uniform scale at the bottom of the tap-press compression.")]
     [SerializeField] private float tapCompressScale = 0.26f;
     [Tooltip("Uniform scale at the top of the rebound overshoot before settling.")]
@@ -126,6 +129,7 @@ public class Cell : MonoBehaviour
         IsXMarked = false;
 
         transform.localScale = restingScale;
+        runtimeRestingScale = restingScale;
 
         if (zoneOverlay != null)
             zoneOverlay.color = zoneColor;
@@ -165,6 +169,11 @@ public class Cell : MonoBehaviour
     }
 
     // ---- Single tap: toggle white X ----
+    public void SetRuntimeRestingScale(Vector3 scale)
+    {
+        runtimeRestingScale = scale;
+    }
+
     public void ToggleXMark()
     {
         if (currentPuppy != null || IsErrorLocked) return;
@@ -186,9 +195,9 @@ public class Cell : MonoBehaviour
         // 1. Cell compression → rebound → settle.
         Sequence cellSeq = DOTween.Sequence();
         cellSeq.SetLink(gameObject, LinkBehaviour.KillOnDestroy);
-        cellSeq.Append(transform.DOScale(Vector3.one * tapCompressScale, compressDuration).SetEase(Ease.OutQuad))
-               .Append(transform.DOScale(Vector3.one * tapReboundScale, reboundDuration).SetEase(Ease.OutBack))
-               .Append(transform.DOScale(restingScale, reboundDuration * 0.5f).SetEase(Ease.OutCubic));
+        cellSeq.Append(transform.DOScale(CurrentRestingScale * tapCompressScale, compressDuration).SetEase(Ease.OutQuad))
+               .Append(transform.DOScale(CurrentRestingScale * tapReboundScale, reboundDuration).SetEase(Ease.OutBack))
+               .Append(transform.DOScale(CurrentRestingScale, reboundDuration * 0.5f).SetEase(Ease.OutCubic));
 
         // 2. White overlay flash (expand around the cell, then fade out larger).
         if (whiteOverlay != null)
@@ -244,12 +253,12 @@ public class Cell : MonoBehaviour
         hideSeq.SetLink(gameObject, LinkBehaviour.KillOnDestroy);
         if (line1 != null) hideSeq.Join(line1.transform.DOScaleX(0f, 0.08f).SetEase(Ease.InQuad));
         if (line2 != null) hideSeq.Join(line2.transform.DOScaleX(0f, 0.08f).SetEase(Ease.InQuad));
-        hideSeq.Join(transform.DOScale(restingScale * 0.9f, 0.05f).SetLoops(2, LoopType.Yoyo));
+        hideSeq.Join(transform.DOScale(CurrentRestingScale * 0.9f, 0.05f).SetLoops(2, LoopType.Yoyo));
         hideSeq.OnComplete(() =>
         {
             if (line1 != null) line1.gameObject.SetActive(false);
             if (line2 != null) line2.gameObject.SetActive(false);
-            transform.localScale = restingScale;
+            transform.localScale = CurrentRestingScale;
             isAnimating = false;
         });
     }

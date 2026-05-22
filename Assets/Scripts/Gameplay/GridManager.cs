@@ -89,7 +89,9 @@ public class GridManager : MonoBehaviour
                 {
                     Color col = (zoneID >= 0 && zoneID < zoneColors.Length) ? zoneColors[zoneID] : Color.white;
                     cell.Init(x, y, zoneID, col);
-                    obj.transform.localScale = cell.RestingScale * cellslocalScale;
+                    Vector3 scaledResting = cell.RestingScale * cellslocalScale;
+                    obj.transform.localScale = scaledResting;
+                    cell.SetRuntimeRestingScale(scaledResting);
                     cells[x, y] = cell;
                 }
                 else

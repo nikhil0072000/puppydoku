@@ -16,6 +16,21 @@ public class InputManager : MonoBehaviour
     private Camera mainCam;
     private WaitForSeconds doubleTapWait;
 
+    [Header("Swipe Input")]
+    [Tooltip("Enable swipe-to-mark behavior for both mouse and touch input.")]
+    [SerializeField] private bool swipeEnabled = true;
+    [Tooltip("Distance in screen pixels the pointer must move before the drag becomes a swipe.")]
+    [SerializeField] private float swipeActivationDistance = 18f;
+
+    private bool pointerDown;
+    private int activeTouchId = -1;
+    private Vector2 pointerDownPosition;
+    private bool swipeActive;
+    private Cell swipeStartCell;
+    private Cell lastSwipedCell;
+    private readonly HashSet<Cell> swipeCells = new();
+    private readonly List<Cell> swipeCellsOrdered = new();
+
     void Awake()
     {
         mainCam = Camera.main;
@@ -29,30 +44,168 @@ public class InputManager : MonoBehaviour
     {
         EnhancedTouchSupport.Enable();
         Touch.onFingerDown += OnFingerDown;
+        Touch.onFingerMove += OnFingerMove;
+        Touch.onFingerUp += OnFingerUp;
     }
 
     void OnDisable()
     {
         Touch.onFingerDown -= OnFingerDown;
+        Touch.onFingerMove -= OnFingerMove;
+        Touch.onFingerUp -= OnFingerUp;
         EnhancedTouchSupport.Disable();
     }
 
     void Update()
     {
-        if (Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame)
+        if (Mouse.current == null)
+            return;
+
+        Vector2 mousePos = Mouse.current.position.ReadValue();
+
+        if (Mouse.current.leftButton.wasPressedThisFrame)
         {
-            Vector2 mousePos = Mouse.current.position.ReadValue();
-            ProcessPointer(mousePos);
+            ProcessPointerDown(mousePos);
+        }
+        else if (pointerDown && activeTouchId == -1 && Mouse.current.leftButton.wasReleasedThisFrame)
+        {
+            ProcessPointerUp(mousePos);
+        }
+        else if (pointerDown && activeTouchId == -1 && Mouse.current.leftButton.isPressed)
+        {
+            ProcessPointerMove(mousePos);
         }
     }
 
     // ---------- Touch ----------
     private void OnFingerDown(Finger finger)
     {
-        ProcessPointer(finger.screenPosition);
+        if (pointerDown)
+            return;
+
+        activeTouchId = finger.index;
+        ProcessPointerDown(finger.screenPosition);
+    }
+
+    private void OnFingerMove(Finger finger)
+    {
+        if (!pointerDown || finger.index != activeTouchId)
+            return;
+
+        ProcessPointerMove(finger.screenPosition);
+    }
+
+    private void OnFingerUp(Finger finger)
+    {
+        if (!pointerDown || finger.index != activeTouchId)
+            return;
+
+        ProcessPointerUp(finger.screenPosition);
+        activeTouchId = -1;
     }
 
     // ---------- Core pointer logic (works for both mouse and touch) ----------
+    private void ProcessPointerDown(Vector2 screenPosition)
+    {
+        if (GameManager.LevelComplete || GameManager.LevelFailed)
+            return;
+
+        if (GameManager.InputLocked)
+            return;
+
+        pointerDown = true;
+        pointerDownPosition = screenPosition;
+        swipeActive = false;
+        swipeStartCell = GetCellAtScreenPosition(screenPosition);
+        lastSwipedCell = null;
+        swipeCells.Clear();
+        swipeCellsOrdered.Clear();
+
+        ProcessPointer(screenPosition);
+    }
+
+    private void ProcessPointerMove(Vector2 screenPosition)
+    {
+        if (!pointerDown || !swipeEnabled || swipeStartCell == null)
+            return;
+
+        if (!swipeActive && Vector2.Distance(pointerDownPosition, screenPosition) >= swipeActivationDistance)
+            BeginSwipe();
+
+        if (swipeActive)
+            AddSwipeCellAtPosition(screenPosition);
+    }
+
+    private void ProcessPointerUp(Vector2 screenPosition)
+    {
+        if (!pointerDown)
+            return;
+
+        if (swipeActive)
+        {
+            AddSwipeCellAtPosition(screenPosition);
+            ApplySwipe();
+        }
+
+        pointerDown = false;
+        swipeActive = false;
+        lastSwipedCell = null;
+        swipeCells.Clear();
+        swipeCellsOrdered.Clear();
+    }
+
+    private void BeginSwipe()
+    {
+        swipeActive = true;
+        CancelPendingTap(swipeStartCell);
+        AddSwipeCellAtPosition(pointerDownPosition);
+    }
+
+    private void AddSwipeCellAtPosition(Vector2 screenPosition)
+    {
+        Cell cell = GetCellAtScreenPosition(screenPosition);
+        if (cell == null || cell == lastSwipedCell)
+            return;
+
+        if (cell.GetPuppy() != null || cell.IsErrorLocked)
+            return;
+
+        if (swipeCells.Add(cell))
+            swipeCellsOrdered.Add(cell);
+
+        lastSwipedCell = cell;
+    }
+
+    private Cell GetCellAtScreenPosition(Vector2 screenPosition)
+    {
+        Ray ray = mainCam.ScreenPointToRay(screenPosition);
+        RaycastHit2D hit = Physics2D.Raycast(ray.origin, ray.direction);
+        return hit.collider?.GetComponent<Cell>();
+    }
+
+    private void CancelPendingTap(Cell cell)
+    {
+        if (cell == null)
+            return;
+
+        if (pendingTaps.TryGetValue(cell, out Coroutine pending))
+        {
+            StopCoroutine(pending);
+            pendingTaps.Remove(cell);
+        }
+    }
+
+    private void ApplySwipe()
+    {
+        foreach (Cell cell in swipeCellsOrdered)
+        {
+            if (cell == null)
+                continue;
+
+            cell.ToggleXMark();
+        }
+    }
+
     private void ProcessPointer(Vector2 screenPosition)
     {
         if (GameManager.LevelComplete || GameManager.LevelFailed)
