@@ -193,10 +193,13 @@ public class Cell : MonoBehaviour
         KillAllTweens();
 
         // 1. Cell compression → rebound → settle.
+        float compressFactor = (restingScale.x > 0f) ? tapCompressScale / restingScale.x : tapCompressScale;
+        float reboundFactor = (restingScale.x > 0f) ? tapReboundScale / restingScale.x : tapReboundScale;
+
         Sequence cellSeq = DOTween.Sequence();
         cellSeq.SetLink(gameObject, LinkBehaviour.KillOnDestroy);
-        cellSeq.Append(transform.DOScale(CurrentRestingScale * tapCompressScale, compressDuration).SetEase(Ease.OutQuad))
-               .Append(transform.DOScale(CurrentRestingScale * tapReboundScale, reboundDuration).SetEase(Ease.OutBack))
+        cellSeq.Append(transform.DOScale(CurrentRestingScale * compressFactor, compressDuration).SetEase(Ease.OutQuad))
+               .Append(transform.DOScale(CurrentRestingScale * reboundFactor, reboundDuration).SetEase(Ease.OutBack))
                .Append(transform.DOScale(CurrentRestingScale, reboundDuration * 0.5f).SetEase(Ease.OutCubic));
 
         // 2. White overlay flash (expand around the cell, then fade out larger).
