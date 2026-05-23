@@ -93,13 +93,15 @@ public class LevelValidatorWindow : EditorWindow
                 }
             if (unique.Count == 0) errors.Add("No colours on grid.");
 
+            Vector2Int[] pre = model.GetSafePrePlaced();
             int winTarget = model.GetSafeWinCondition();
-            if (winTarget != unique.Count)
-                errors.Add($"Win condition {winTarget} doesn't match unique colours {unique.Count}.");
+            if (winTarget < pre.Length)
+                errors.Add($"Win condition {winTarget} is less than number of pre-placed puppies {pre.Length}.");
+            if (winTarget > unique.Count)
+                errors.Add($"Win condition {winTarget} exceeds unique colours {unique.Count}.");
             if (winTarget > size)
                 errors.Add($"Win condition {winTarget} exceeds grid size {size}.");
 
-            Vector2Int[] pre = model.GetSafePrePlaced();
             foreach (Vector2Int pos in pre)
             {
                 if (pos.x < 0 || pos.x >= size || pos.y < 0 || pos.y >= size)

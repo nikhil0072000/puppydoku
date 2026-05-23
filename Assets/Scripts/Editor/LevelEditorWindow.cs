@@ -18,6 +18,7 @@ public class LevelEditorWindow : EditorWindow
     private bool isPuppyMode = false; // toggle between Paint / Pre-Place
     private HashSet<Vector2Int> prePlacedPositions = new HashSet<Vector2Int>();
     private Vector2Int[] hiddenSolution = null;
+    private int winCondition = -1;    // -1 means auto from current grid
     private Vector2 scrollPos;
 
     // ---------- Color palette (taken from GridConfig at runtime) ----------
@@ -155,9 +156,16 @@ public class LevelEditorWindow : EditorWindow
         EditorGUILayout.Space();
 
         int uniqueColors = CountUniqueColors();
-        int maxPossible = Mathf.Min(gridSize, paletteColors != null ? paletteColors.Length : gridSize);
-        EditorGUILayout.LabelField($"Win Condition (auto): {uniqueColors} puppies (min = max = {uniqueColors})");
-        EditorGUILayout.LabelField($"Grid Max Possible: {maxPossible}");
+        int minWin = Mathf.Max(prePlacedPositions.Count, 1);
+        int maxWin = Mathf.Max(minWin, Mathf.Min(uniqueColors, gridSize));
+        if (winCondition < minWin || winCondition > maxWin)
+            winCondition = maxWin;
+
+        EditorGUILayout.LabelField("Win Condition", EditorStyles.boldLabel);
+        EditorGUILayout.LabelField($"Colour groups on grid: {uniqueColors}");
+        EditorGUILayout.LabelField($"Hidden puppies range: {minWin} .. {maxWin}");
+        winCondition = EditorGUILayout.IntSlider("Win Condition", winCondition, minWin, maxWin);
+
         if (uniqueColors > gridSize)
         {
             EditorGUILayout.HelpBox("Unique colours exceed grid size! Puzzle may be impossible.", MessageType.Warning);
@@ -213,6 +221,15 @@ public class LevelEditorWindow : EditorWindow
         return unique.Count;
     }
 
+    int GetWinCondition(int uniqueColors)
+    {
+        int minWin = Mathf.Max(prePlacedPositions.Count, 1);
+        int maxWin = Mathf.Max(minWin, Mathf.Min(uniqueColors, gridSize));
+        if (winCondition < minWin || winCondition > maxWin)
+            return maxWin;
+        return winCondition;
+    }
+
     void GenerateHiddenSolution()
     {
         int[,] zoneMap = new int[gridSize, gridSize];
@@ -231,6 +248,7 @@ public class LevelEditorWindow : EditorWindow
             zoneToColorIndex[i] = i;
 
         var alreadyPlaced = new HashSet<Vector2Int>(prePlacedPositions);
+        int targetCount = GetWinCondition(CountUniqueColors());
         if (!PuzzleSolver.TrySolve(zoneMap, zoneToColorIndex, CountUniqueColors(), alreadyPlaced, out var solution))
         {
             EditorUtility.DisplayDialog("Hidden Solution", "No valid hidden solution could be found for this puzzle.", "OK");
@@ -238,7 +256,14 @@ public class LevelEditorWindow : EditorWindow
             return;
         }
 
-        hiddenSolution = solution.ToArray();
+        if (solution.Count < targetCount)
+        {
+            EditorUtility.DisplayDialog("Hidden Solution", "Solver returned fewer positions than the requested win condition.", "OK");
+            hiddenSolution = solution.ToArray();
+            return;
+        }
+
+        hiddenSolution = solution.GetRange(0, targetCount).ToArray();
         EditorUtility.DisplayDialog("Hidden Solution", $"Hidden solution generated with {hiddenSolution.Length} puppies.", "OK");
     }
 
@@ -259,6 +284,8 @@ public class LevelEditorWindow : EditorWindow
         int uq = CountUniqueColors();
 
         // Build LevelDataModel
+        int currentWinCondition = GetWinCondition(uq);
+
         LevelDataModel model = new LevelDataModel
         {
             levelId = levelId,
@@ -267,7 +294,7 @@ public class LevelEditorWindow : EditorWindow
             colorData = new int[gridSize][],
             prePlaced = new PrePlacedData[prePlacedPositions.Count],
             solution = hiddenSolution != null ? ConvertSolutionToData(hiddenSolution) : null,
-            winCondition = uq
+            winCondition = currentWinCondition
         };
 
         for (int y = 0; y < gridSize; y++)
