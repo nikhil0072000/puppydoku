@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
@@ -32,7 +33,16 @@ public class LevelLoader : MonoBehaviour
 
     public LevelDataModel CurrentLevelData { get; private set; }
     public Difficulty CurrentDifficulty { get; private set; } = Difficulty.Easy;
-    public LevelType CurrentLevelType => currentLevelInfo != null ? currentLevelInfo.Type : LevelType.Normal;
+    public bool IsDailySession { get; private set; }
+    public LevelType CurrentLevelType
+    {
+        get
+        {
+            if (IsDailySession)
+                return LevelType.DailyChallenge;
+            return currentLevelInfo != null ? currentLevelInfo.Type : LevelType.Normal;
+        }
+    }
     public bool HasNextLevel => currentListPosition >= 0 && currentListPosition < availableLevels.Count - 1;
     public bool HasTutorialLevel => availableLevels.Any(level => level.Type == LevelType.Tutorial);
     public bool IsTutorialComplete => PlayerPrefs.GetInt(TutorialCompleteKey, 0) == 1;
@@ -184,7 +194,7 @@ public class LevelLoader : MonoBehaviour
             }
         }
 
-        if (levelInfo.Type != LevelType.Tutorial)
+        if (levelInfo.Type == LevelType.Normal && !IsDailySession)
             SaveCurrentLevelPosition();
 
         for (float i = 0.3f; i <= 1f; i += Time.deltaTime * 1.5f)
@@ -213,11 +223,13 @@ public class LevelLoader : MonoBehaviour
         if (currentListPosition < 0 || currentListPosition >= availableLevels.Count)
             SetSavedLevelPosition();
 
+        EndDailySession();
         StartCoroutine(LoadLevelRoutine(availableLevels[currentListPosition], gameSceneName));
     }
 
     public void LoadFirstAvailableLevel()
     {
+        EndDailySession();
         LoadCurrentLevel();
     }
 
@@ -230,6 +242,7 @@ public class LevelLoader : MonoBehaviour
             return;
         }
 
+        EndDailySession();
         currentListPosition = availableLevels.IndexOf(firstNormal);
         SaveCurrentLevelPosition();
         StartCoroutine(LoadLevelRoutine(firstNormal, gameSceneName));
@@ -243,8 +256,87 @@ public class LevelLoader : MonoBehaviour
             return;
         }
 
+        EndDailySession();
         LevelInfo nextLevel = availableLevels[currentListPosition + 1];
         StartCoroutine(LoadLevelRoutine(nextLevel, gameSceneName));
+    }
+
+    public void LoadNextNormalLevel()
+    {
+        if (availableLevels.Count == 0)
+        {
+            Debug.LogError("No levels available to load.");
+            return;
+        }
+
+        int startIndex = currentListPosition + 1;
+        LevelInfo nextNormal = null;
+
+        for (int i = startIndex; i < availableLevels.Count; i++)
+        {
+            if (availableLevels[i].Type == LevelType.Normal)
+            {
+                nextNormal = availableLevels[i];
+                break;
+            }
+        }
+
+        if (nextNormal == null)
+            nextNormal = availableLevels.FirstOrDefault(level => level.Type == LevelType.Normal);
+
+        if (nextNormal == null)
+        {
+            Debug.LogError("No normal levels available to continue to.");
+            return;
+        }
+
+        EndDailySession();
+        currentListPosition = availableLevels.IndexOf(nextNormal);
+        SaveCurrentLevelPosition();
+        StartCoroutine(LoadLevelRoutine(nextNormal, gameSceneName));
+    }
+
+    public void LoadDailyChallenge()
+    {
+        if (DailyChallengeManager.Instance == null)
+        {
+            Debug.LogError("DailyChallengeManager is not present in the scene.");
+            return;
+        }
+
+        DailyChallengeManager.Instance.EnsureDailyState();
+        string selectedKey = DailyChallengeManager.Instance.SelectedLevelKey;
+        LevelInfo dailyLevel = null;
+
+        if (!string.IsNullOrEmpty(selectedKey))
+            dailyLevel = availableLevels.FirstOrDefault(level => level.FileKey == selectedKey && level.Type == LevelType.DailyChallenge);
+
+        if (dailyLevel == null)
+            dailyLevel = ChooseDailyLevelForDate(DailyChallengeManager.Instance.ChallengeDate);
+
+        if (dailyLevel == null)
+        {
+            Debug.LogError("No daily challenge level available to load.");
+            return;
+        }
+
+        DailyChallengeManager.Instance.SetSelectedDailyLevelKey(dailyLevel.FileKey);
+        IsDailySession = true;
+        StartCoroutine(LoadLevelRoutine(dailyLevel, gameSceneName));
+    }
+
+    private LevelInfo ChooseDailyLevelForDate(DateTime date)
+    {
+        List<LevelInfo> dailyLevels = availableLevels.Where(level => level.Type == LevelType.DailyChallenge).ToList();
+        if (dailyLevels.Count == 0)
+            dailyLevels = availableLevels.Where(level => level.Type == LevelType.Normal).ToList();
+
+        if (dailyLevels.Count == 0)
+            return null;
+
+        int seed = date.Year * 1000 + date.DayOfYear;
+        int index = Mathf.Abs(seed) % dailyLevels.Count;
+        return dailyLevels[index];
     }
 
     public void MarkTutorialCompleted()
@@ -271,6 +363,15 @@ public class LevelLoader : MonoBehaviour
         }
 
         currentListPosition = savedPosition;
+    }
+
+    private void EndDailySession()
+    {
+        if (!IsDailySession)
+            return;
+
+        IsDailySession = false;
+        DailyChallengeManager.Instance?.StopDailyTimer();
     }
 
     private void SaveCurrentLevelPosition()

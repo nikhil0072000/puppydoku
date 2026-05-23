@@ -1,6 +1,7 @@
 using PuppyPuzzle.PowerUps;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine.UI;
 using TMPro;
 
 public class PopupManager : MonoBehaviour
@@ -15,8 +16,19 @@ public class PopupManager : MonoBehaviour
     [SerializeField] private GameObject nextLevelButton;   // visible only on win and only if another level exists
     [SerializeField] private GameObject startGameButton;   // shown after tutorial completes
     [SerializeField] private GameObject reviveButton;      // shown only on lose if revive is available
+    [SerializeField] private GameObject dailyResultPanel;
+    [SerializeField] private TextMeshProUGUI dailyResultTitleText;
+    [SerializeField] private TextMeshProUGUI dailyResultTimeText;
+    [SerializeField] private TextMeshProUGUI dailyResultPercentileText;
+    [SerializeField] private Button dailyResultContinueButton;
     [SerializeField] private TextMeshProUGUI nextLevelButtonText;
     [SerializeField] private TextMeshProUGUI startGameButtonText;
+
+    [Header("Daily Lose")]
+    [SerializeField] private GameObject dailyLosePanel;
+    [SerializeField] private TextMeshProUGUI dailyLoseMessageText;
+    [SerializeField] private GameObject dailyLoseRetryButton;
+    [SerializeField] private GameObject dailyLoseHomeButton;
 
     void Awake()
     {
@@ -26,9 +38,21 @@ public class PopupManager : MonoBehaviour
 
     void Start()
     {
-        // Ensure popup is hidden at start
+        // Ensure popup and daily result panel are hidden at start
         if (popupPanel != null) popupPanel.SetActive(false);
+        if (dailyResultPanel != null) dailyResultPanel.SetActive(false);
+        if (dailyLosePanel != null) dailyLosePanel.SetActive(false);
+        if (startGameButton != null) startGameButton.SetActive(false);
         CacheButtonText();
+
+        if (dailyResultContinueButton != null)
+            dailyResultContinueButton.onClick.AddListener(OnDailyContinueClicked);
+    }
+
+    void OnDestroy()
+    {
+        if (dailyResultContinueButton != null)
+            dailyResultContinueButton.onClick.RemoveListener(OnDailyContinueClicked);
     }
 
     private void CacheButtonText()
@@ -76,6 +100,13 @@ public class PopupManager : MonoBehaviour
 
     public void ShowLose()
     {
+        if (LevelLoader.Instance != null && LevelLoader.Instance.CurrentLevelType == LevelType.DailyChallenge)
+        {
+            ShowDailyLosePanel();
+            return;
+        }
+
+        HideDailyLosePanel();
         if (popupPanel != null) popupPanel.SetActive(true);
         if (messageText != null) messageText.text = "💔 Out of Lives!";
         if (retryButton != null) retryButton.SetActive(true);
@@ -112,6 +143,73 @@ public class PopupManager : MonoBehaviour
             });
     }
 
+    public void ShowDailyResult(float elapsedSeconds, int percentile)
+    {
+        if (popupPanel != null)
+            popupPanel.SetActive(false);
+
+        if (dailyResultPanel != null)
+            dailyResultPanel.SetActive(true);
+
+        if (dailyResultTitleText != null)
+            dailyResultTitleText.text = "Challenge Cleared";
+
+        if (dailyResultTimeText != null)
+        {
+            int minutes = Mathf.FloorToInt(elapsedSeconds / 60f);
+            int seconds = Mathf.FloorToInt(elapsedSeconds % 60f);
+            dailyResultTimeText.text = $"Time: {minutes:00}:{seconds:00}";
+        }
+
+        if (dailyResultPercentileText != null)
+            dailyResultPercentileText.text = $"Beat {percentile}% of players";
+    }
+
+    public void OnDailyContinueClicked()
+    {
+        if (dailyResultPanel != null)
+            dailyResultPanel.SetActive(false);
+
+        if (LevelLoader.Instance != null)
+            LevelLoader.Instance.LoadNextNormalLevel();
+        else
+            Debug.LogError("LevelLoader instance not found!");
+    }
+
+    private void HideDailyLosePanel()
+    {
+        if (dailyLosePanel != null)
+            dailyLosePanel.SetActive(false);
+    }
+
+    private void ShowDailyLosePanel()
+    {
+        if (popupPanel != null) popupPanel.SetActive(false);
+        if (dailyResultPanel != null) dailyResultPanel.SetActive(false);
+        if (dailyLosePanel != null) dailyLosePanel.SetActive(true);
+
+        if (dailyLoseMessageText != null)
+            dailyLoseMessageText.text = "💔 Daily Challenge Failed";
+
+        if (dailyLoseRetryButton != null) dailyLoseRetryButton.SetActive(true);
+        if (dailyLoseHomeButton != null) dailyLoseHomeButton.SetActive(true);
+    }
+
+    public void ShowDailyAlreadyCompleted()
+    {
+        if (dailyResultPanel != null)
+            dailyResultPanel.SetActive(false);
+
+        if (popupPanel != null) popupPanel.SetActive(true);
+        if (messageText != null) messageText.text = "You have completed Daily Challenge today.";
+
+        if (retryButton != null) retryButton.SetActive(false);
+        if (homeButton != null) homeButton.SetActive(true);
+        if (nextLevelButton != null) nextLevelButton.SetActive(false);
+        if (startGameButton != null) startGameButton.SetActive(false);
+        if (reviveButton != null) reviveButton.SetActive(false);
+    }
+
     // Called by Retry button OnClick
     public void OnRetryClicked()
     {
@@ -122,6 +220,11 @@ public class PopupManager : MonoBehaviour
     // Called by Home button OnClick
     public void OnHomeClicked()
     {
+        if (LevelLoader.Instance != null && LevelLoader.Instance.CurrentLevelType == LevelType.DailyChallenge)
+        {
+            DailyChallengeManager.Instance?.StopDailyTimer();
+        }
+
         SceneManager.LoadScene("Home");
     }
 

@@ -1,14 +1,14 @@
 {
-  "levelId": "Level_New",
-  "difficulty": "Easy",
+  "levelId": "daily_01",
+  "difficulty": "Medium",
   "gridSize": 4,
-  "levelType": "Tutorial",
-  "displayName": "tutorial",
+  "levelType": "DailyChallenge",
+  "displayName": "daily_01",
   "colorData": [
     [
       0,
       0,
-      2,
+      3,
       0
     ],
     [
@@ -20,34 +20,34 @@
     [
       0,
       0,
-      3,
-      3
+      2,
+      2
     ],
     [
       0,
       0,
-      3,
+      2,
       0
     ]
   ],
   "prePlaced": [
     {
-      "x": 3,
-      "y": 2
+      "x": 2,
+      "y": 0
     }
   ],
   "solution": [
     {
-      "x": 3,
-      "y": 2
+      "x": 2,
+      "y": 0
     },
     {
       "x": 0,
       "y": 1
     },
     {
-      "x": 2,
-      "y": 0
+      "x": 3,
+      "y": 2
     },
     {
       "x": 1,

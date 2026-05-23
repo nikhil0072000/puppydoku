@@ -40,6 +40,7 @@ public class GameManager : MonoBehaviour
     private int lives;
     private bool gameOver = false;
     private bool revivedThisLevel = false;
+    private bool isDailyMode = false;
 
     // Most recently placed puppy — used by the Bulb hint as its focus cell.
     private Vector2Int? lastPlacedCell;
@@ -79,6 +80,14 @@ public class GameManager : MonoBehaviour
         else
         {
             Debug.LogError("LevelLoader or CurrentLevelData not initialized!");
+        }
+    }
+
+    void Update()
+    {
+        if (isDailyMode && DailyChallengeManager.Instance != null && hudManager != null)
+        {
+            hudManager.UpdateDailyTimer(DailyChallengeManager.Instance.ElapsedSeconds);
         }
     }
 
@@ -232,6 +241,36 @@ public class GameManager : MonoBehaviour
         {
             hudManager.UpdateHearts(lives);
             hudManager.UpdateProgress(placedPuppies.Count, totalColorCount);
+        }
+
+        isDailyMode = LevelLoader.Instance != null && LevelLoader.Instance.CurrentLevelType == LevelType.DailyChallenge;
+
+        if (hudManager != null)
+        {
+            string label = "Level";
+            if (isDailyMode)
+            {
+                label = DailyChallengeManager.Instance != null ? DailyChallengeManager.Instance.GetChallengeDateText() : "Daily";
+            }
+            else if (LevelLoader.Instance != null)
+            {
+                label = LevelLoader.Instance.CurrentLevelButtonLabel;
+            }
+
+            hudManager.SetLevelLabel(label);
+        }
+
+        if (isDailyMode)
+        {
+            DailyChallengeManager.Instance?.EnsureDailyState();
+            DailyChallengeManager.Instance?.StartDailyTimer();
+            if (hudManager != null)
+                hudManager.SetDailyTimerVisible(true);
+        }
+        else
+        {
+            if (hudManager != null)
+                hudManager.SetDailyTimerVisible(false);
         }
 
         Debug.Log($"Level loaded: {size}x{size}, unique colours: {totalColorCount}, pre-placed: {placedPuppies.Count}");
@@ -447,6 +486,16 @@ public class GameManager : MonoBehaviour
             LevelLoader.Instance.MarkTutorialCompleted();
             if (PopupManager.Instance != null)
                 PopupManager.Instance.ShowTutorialComplete();
+            return;
+        }
+
+        if (LevelLoader.Instance != null && LevelLoader.Instance.CurrentLevelType == LevelType.DailyChallenge)
+        {
+            float elapsed = DailyChallengeManager.Instance != null ? DailyChallengeManager.Instance.ElapsedSeconds : 0f;
+            DailyChallengeManager.Instance?.StopDailyTimer();
+            DailyChallengeManager.Instance?.RecordDailyCompletion(elapsed);
+            if (PopupManager.Instance != null)
+                PopupManager.Instance.ShowDailyResult(elapsed, DailyChallengeManager.Instance.CompletedPercentile);
             return;
         }
 
