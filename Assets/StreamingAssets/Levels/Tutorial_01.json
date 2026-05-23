@@ -1,31 +1,33 @@
 {
-  "levelId": "Level_01",
+  "levelId": "Tutorial_01",
   "difficulty": "Easy",
   "gridSize": 4,
+  "levelType": "Tutorial",
+  "displayName": null,
   "colorData": [
     [
       0,
       0,
-      1,
-      0
-    ],
-    [
-      2,
-      0,
-      0,
-      0
-    ],
-    [
-      0,
-      0,
       3,
-      3
+      0
+    ],
+    [
+      1,
+      0,
+      0,
+      0
     ],
     [
       0,
       0,
+      2,
+      2
+    ],
+    [
       0,
-      3
+      0,
+      2,
+      0
     ]
   ],
   "prePlaced": [
@@ -36,6 +38,10 @@
   ],
   "solution": [
     {
+      "x": 3,
+      "y": 2
+    },
+    {
       "x": 0,
       "y": 1
     },
@@ -44,9 +50,9 @@
       "y": 0
     },
     {
-      "x": 3,
-      "y": 2
+      "x": 1,
+      "y": 3
     }
   ],
-  "winCondition": 3
+  "winCondition": 4
 }

@@ -154,29 +154,22 @@ public class DailyChallengeManager : MonoBehaviour
         return Mathf.Max(0f, (float)(nextReset - DateTime.Now).TotalSeconds);
     }
 
-    public string GetDailyTitleText()
-    {
-        return HasCompletedToday ? "Daily Challenge" : "Daily Challenge";
-    }
-
     public string GetDailyButtonText()
     {
-        if (HasCompletedToday)
-            return $"Top {CompletedPercentile}%";
+        // The button label is always the mode name; it stays fixed even after completion.
+        return "Daily Challenge";
+    }
 
-        if (ElapsedSeconds > 0f)
-            return "Continue Today";
-
-        return "Play Today";
+    public string GetDailyPercentText()
+    {
+        // Shown in a separate label once today's challenge is finished, e.g. "Top 18%".
+        return HasCompletedToday ? $"Top {CompletedPercentile}%" : string.Empty;
     }
 
     public string GetDailySubtitleText()
     {
         if (HasCompletedToday)
-            return $"Finished in {FormatTime(CompletedTimeSeconds)}";
-
-        if (ElapsedSeconds > 0f)
-            return "Resume your current attempt";
+            return $"Time {FormatTime(CompletedTimeSeconds)}";
 
         float secondsUntilReset = GetSecondsUntilReset();
         if (secondsUntilReset <= 0f)
@@ -187,7 +180,8 @@ public class DailyChallengeManager : MonoBehaviour
 
     public string GetChallengeDateText()
     {
-        return ChallengeDate.ToString("MMM d");
+        // Game-scene header format, e.g. "May.22".
+        return ChallengeDate.ToString("MMM.dd", System.Globalization.CultureInfo.InvariantCulture);
     }
 
     private int CalculatePercentile(float elapsedSeconds)
@@ -209,8 +203,9 @@ public class DailyChallengeManager : MonoBehaviour
     {
         int hours = Mathf.FloorToInt(totalSeconds / 3600f);
         int minutes = Mathf.FloorToInt((totalSeconds % 3600f) / 60f);
+        int seconds = Mathf.FloorToInt(totalSeconds % 60f);
         if (hours > 0)
-            return string.Format("{0}h {1}m", hours, minutes);
-        return string.Format("{0}m {1}s", minutes, Mathf.FloorToInt(totalSeconds % 60f));
+            return string.Format("{0}h {1:00}m {2:00}s", hours, minutes, seconds);
+        return string.Format("{0}m {1:00}s", minutes, seconds);
     }
 }

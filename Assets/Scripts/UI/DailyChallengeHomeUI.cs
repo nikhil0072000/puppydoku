@@ -5,11 +5,22 @@ using UnityEngine.UI;
 public class DailyChallengeHomeUI : MonoBehaviour
 {
     [SerializeField] private Button dailyButton;
-    [SerializeField] private TextMeshProUGUI titleText;
     [SerializeField] private TextMeshProUGUI subtitleText;
-    [SerializeField] private TextMeshProUGUI dateText;
-    [SerializeField] private Color activeColor = new Color(0.6f, 0.2f, 0.9f);
-    [SerializeField] private Color completedColor = new Color(0.35f, 0.18f, 0.45f);
+
+    [Tooltip("Separate label that shows the result rank, e.g. \"Top 18%\". Hidden until today's challenge is finished.")]
+    [SerializeField] private TextMeshProUGUI percentText;
+
+    [Tooltip("How often (seconds) the reset countdown subtitle ticks while the challenge is still available.")]
+    [SerializeField] private float subtitleRefreshInterval = 1f;
+
+    private TextMeshProUGUI buttonLabel;
+    private float refreshTimer;
+
+    private void Awake()
+    {
+        if (dailyButton != null)
+            buttonLabel = dailyButton.GetComponentInChildren<TextMeshProUGUI>();
+    }
 
     private void Start()
     {
@@ -21,6 +32,20 @@ public class DailyChallengeHomeUI : MonoBehaviour
         Refresh();
     }
 
+    private void Update()
+    {
+        // Only the reset countdown needs to tick; once completed the labels are static.
+        if (DailyChallengeManager.Instance == null || DailyChallengeManager.Instance.HasCompletedToday)
+            return;
+
+        refreshTimer += Time.unscaledDeltaTime;
+        if (refreshTimer < subtitleRefreshInterval)
+            return;
+
+        refreshTimer = 0f;
+        RefreshSubtitle();
+    }
+
     public void Refresh()
     {
         if (DailyChallengeManager.Instance == null)
@@ -30,26 +55,28 @@ public class DailyChallengeHomeUI : MonoBehaviour
 
         bool completed = DailyChallengeManager.Instance.HasCompletedToday;
 
-        if (titleText != null)
-            titleText.text = DailyChallengeManager.Instance.GetDailyTitleText();
+        // Button label stays "Daily Challenge" regardless of state.
+        if (buttonLabel != null)
+            buttonLabel.text = DailyChallengeManager.Instance.GetDailyButtonText();
 
+        // Result rank lives in its own label, only visible once finished.
+        if (percentText != null)
+        {
+            percentText.text = DailyChallengeManager.Instance.GetDailyPercentText();
+            percentText.gameObject.SetActive(completed);
+        }
+
+        RefreshSubtitle();
+
+        // Once finished, the button is disabled (and shows its disabled color) until the daily resets.
+        if (dailyButton != null)
+            dailyButton.interactable = !completed;
+    }
+
+    private void RefreshSubtitle()
+    {
         if (subtitleText != null)
             subtitleText.text = DailyChallengeManager.Instance.GetDailySubtitleText();
-
-        if (dateText != null)
-            dateText.text = DailyChallengeManager.Instance.GetChallengeDateText();
-
-        if (dailyButton != null)
-        {
-            dailyButton.interactable = true;
-            ColorBlock colors = dailyButton.colors;
-            colors.normalColor = completed ? completedColor : activeColor;
-            dailyButton.colors = colors;
-
-            TextMeshProUGUI buttonLabel = dailyButton.GetComponentInChildren<TextMeshProUGUI>();
-            if (buttonLabel != null)
-                buttonLabel.text = DailyChallengeManager.Instance.GetDailyButtonText();
-        }
     }
 
     public void OnDailyButtonClicked()

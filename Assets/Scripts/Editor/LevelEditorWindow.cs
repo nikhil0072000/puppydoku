@@ -10,7 +10,6 @@ public class LevelEditorWindow : EditorWindow
     // ---------- Level settings ----------
     private string levelId = "Level_New";
     private LevelType levelType = LevelType.Normal;
-    private string displayName = string.Empty;
     private Difficulty difficulty = Difficulty.Easy;
     private int gridSize = 4;
     private int[,] colorData;   // the drawn zone IDs (ColorID values)
@@ -73,9 +72,14 @@ public class LevelEditorWindow : EditorWindow
         EditorGUILayout.Space();
 
         // --- Level Info ---
-        levelId = EditorGUILayout.TextField("Level ID", levelId);
+        // Level ID prefix is driven by the type: Level_* / Daily_* / Tutorial_*.
+        EditorGUI.BeginChangeCheck();
         levelType = (LevelType)EditorGUILayout.EnumPopup("Level Type", levelType);
-        displayName = EditorGUILayout.TextField("Display Name", displayName);
+        if (EditorGUI.EndChangeCheck())
+            levelId = LevelDataModel.ApplyPrefixForType(levelId, levelType);
+
+        levelId = EditorGUILayout.TextField("Level ID", levelId);
+        EditorGUILayout.LabelField(" ", $"Saved as: {LevelDataModel.ApplyPrefixForType(levelId, levelType).Replace(" ", "_")}.json", EditorStyles.miniLabel);
         difficulty = (Difficulty)EditorGUILayout.EnumPopup("Difficulty", difficulty);
         int newSize = EditorGUILayout.IntField("Grid Size", gridSize);
         if (newSize != gridSize && newSize >= 2)
@@ -290,11 +294,13 @@ public class LevelEditorWindow : EditorWindow
         // Build LevelDataModel
         int currentWinCondition = GetWinCondition(uq);
 
+        // Enforce the type-correct prefix so the file name and level type always agree.
+        levelId = LevelDataModel.ApplyPrefixForType(levelId, levelType);
+
         LevelDataModel model = new LevelDataModel
         {
             levelId = levelId,
             levelType = levelType.ToString(),
-            displayName = string.IsNullOrWhiteSpace(displayName) ? null : displayName,
             difficulty = difficulty.ToString(),
             gridSize = gridSize,
             colorData = new int[gridSize][],

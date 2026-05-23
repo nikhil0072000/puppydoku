@@ -71,11 +71,10 @@ public class LevelLoader : MonoBehaviour
             Debug.LogError("No level files found in StreamingAssets/Levels! Creating fallback data.");
             availableLevels.Add(new LevelInfo
             {
-                FileName = "Level_01",
+                FileName = "Level_1",
                 FilePath = string.Empty,
-                FileKey = "01",
-                Type = LevelType.Normal,
-                DisplayName = "Level 1"
+                FileKey = "1",
+                Type = LevelType.Normal
             });
         }
 
@@ -100,37 +99,21 @@ public class LevelLoader : MonoBehaviour
             return;
         }
 
-        string[] files = Directory.GetFiles(folder, "Level_*.json");
+        // Level type is derived from the filename prefix: Level_* (Normal), Daily_* (DailyChallenge), Tutorial_* (Tutorial).
+        string[] files = Directory.GetFiles(folder, "*.json");
         foreach (string filePath in files)
         {
             string name = Path.GetFileNameWithoutExtension(filePath);
-            if (!name.StartsWith("Level_", System.StringComparison.OrdinalIgnoreCase))
+            if (!LevelDataModel.TryParseFileName(name, out LevelType type, out string keyPart))
                 continue;
 
-            string keyPart = name["Level_".Length..];
-            var levelInfo = new LevelInfo
+            availableLevels.Add(new LevelInfo
             {
                 FileName = name,
                 FilePath = filePath,
-                FileKey = keyPart
-            };
-
-            try
-            {
-                string json = File.ReadAllText(filePath);
-                LevelDataModel metadata = JsonConvert.DeserializeObject<LevelDataModel>(json);
-                if (metadata != null)
-                {
-                    levelInfo.Type = metadata.GetParsedLevelType();
-                    levelInfo.DisplayName = metadata.displayName;
-                }
-            }
-            catch (System.Exception e)
-            {
-                Debug.LogWarning($"Failed to parse level metadata from {filePath}: {e.Message}");
-            }
-
-            availableLevels.Add(levelInfo);
+                FileKey = keyPart,
+                Type = type
+            });
         }
 
         availableLevels.Sort(CompareLevels);
@@ -356,10 +339,11 @@ public class LevelLoader : MonoBehaviour
         if (savedPosition < 0 || savedPosition >= availableLevels.Count)
             savedPosition = 0;
 
-        if (savedPosition >= 0 && savedPosition < availableLevels.Count && availableLevels[savedPosition].Type == LevelType.Tutorial)
+        // The home progression only tracks Normal levels — never snap to a Tutorial/Daily/Event entry.
+        if (savedPosition < 0 || savedPosition >= availableLevels.Count || availableLevels[savedPosition].Type != LevelType.Normal)
         {
-            int normalIndex = availableLevels.FindIndex(level => level.Type != LevelType.Tutorial);
-            savedPosition = normalIndex >= 0 ? normalIndex : savedPosition;
+            int normalIndex = availableLevels.FindIndex(level => level.Type == LevelType.Normal);
+            savedPosition = normalIndex >= 0 ? normalIndex : Mathf.Clamp(savedPosition, 0, availableLevels.Count - 1);
         }
 
         currentListPosition = savedPosition;
@@ -431,23 +415,22 @@ public class LevelLoader : MonoBehaviour
         public string FilePath;
         public string FileKey;
         public LevelType Type = LevelType.Normal;
-        public string DisplayName;
 
         public string GetButtonLabel()
         {
             if (Type == LevelType.Tutorial)
                 return "Tutorial";
 
-            if (!string.IsNullOrWhiteSpace(DisplayName))
-                return DisplayName.Trim();
+            // Predefined label from the level type + number, e.g. "Level 1" / "Daily 3".
+            string word = Type == LevelType.DailyChallenge ? "Daily" : "Level";
 
             if (int.TryParse(FileKey, out int parsed))
-                return $"Level {parsed}";
+                return $"{word} {parsed}";
 
             if (!string.IsNullOrWhiteSpace(FileKey))
-                return FileKey;
+                return $"{word} {FileKey}";
 
-            return FileName ?? "Level";
+            return word;
         }
     }
 }

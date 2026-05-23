@@ -15,6 +15,60 @@ public class LevelDataModel
     public PrePlacedData[] solution;    // hidden solved puppy positions
     public int winCondition = -1;        // -1 means auto-calculate from colorData
 
+    // Filename prefix <-> LevelType mapping. Order matters for matching (longest/most-specific first is fine here).
+    private static readonly (string Prefix, LevelType Type)[] FilePrefixes =
+    {
+        ("Tutorial_", LevelType.Tutorial),
+        ("Daily_", LevelType.DailyChallenge),
+        ("Event_", LevelType.Event),
+        ("Level_", LevelType.Normal),
+    };
+
+    /// <summary>The filename/levelId prefix word for a given level type (e.g. "Level", "Daily", "Tutorial").</summary>
+    public static string GetFilePrefix(LevelType type)
+    {
+        foreach (var entry in FilePrefixes)
+        {
+            if (entry.Type == type)
+                return entry.Prefix.TrimEnd('_');
+        }
+        return "Level";
+    }
+
+    /// <summary>
+    /// Parses a level file name (without extension) such as "Daily_3" into its type and key part ("3").
+    /// Returns false for names that don't carry a recognised prefix.
+    /// </summary>
+    public static bool TryParseFileName(string fileNameNoExtension, out LevelType type, out string key)
+    {
+        type = LevelType.Normal;
+        key = string.Empty;
+
+        if (string.IsNullOrWhiteSpace(fileNameNoExtension))
+            return false;
+
+        foreach (var entry in FilePrefixes)
+        {
+            if (fileNameNoExtension.StartsWith(entry.Prefix, StringComparison.OrdinalIgnoreCase))
+            {
+                type = entry.Type;
+                key = fileNameNoExtension.Substring(entry.Prefix.Length);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /// <summary>
+    /// Rewrites a levelId so its prefix matches the given type, preserving the key/number portion.
+    /// "Level_3" + DailyChallenge => "Daily_3"; "MyLevel" + Normal => "Level_MyLevel".
+    /// </summary>
+    public static string ApplyPrefixForType(string levelId, LevelType type)
+    {
+        string suffix = TryParseFileName(levelId, out _, out string key) ? key : (levelId ?? string.Empty).Trim();
+        return $"{GetFilePrefix(type)}_{suffix}";
+    }
+
     public LevelType GetParsedLevelType()
     {
         if (string.IsNullOrWhiteSpace(levelType))
