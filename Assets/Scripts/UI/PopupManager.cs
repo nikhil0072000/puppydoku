@@ -1,3 +1,4 @@
+using PuppyPuzzle.PowerUps;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using TMPro;
@@ -13,6 +14,7 @@ public class PopupManager : MonoBehaviour
     [SerializeField] private GameObject homeButton;
     [SerializeField] private GameObject nextLevelButton;   // visible only on win and only if another level exists
     [SerializeField] private GameObject startGameButton;   // shown after tutorial completes
+    [SerializeField] private GameObject reviveButton;      // shown only on lose if revive is available
     [SerializeField] private TextMeshProUGUI nextLevelButtonText;
     [SerializeField] private TextMeshProUGUI startGameButtonText;
 
@@ -80,6 +82,34 @@ public class PopupManager : MonoBehaviour
         if (homeButton != null) homeButton.SetActive(true);
         if (nextLevelButton != null) nextLevelButton.SetActive(false);
         if (startGameButton != null) startGameButton.SetActive(false);
+        if (reviveButton != null)
+            reviveButton.SetActive(GameManager.Instance != null && GameManager.Instance.CanRevive);
+    }
+
+    public void OnReviveClicked()
+    {
+        if (popupPanel != null)
+            popupPanel.SetActive(false);
+
+        if (DummyRewardedAdService.Instance == null)
+        {
+            Debug.LogWarning("[PopupManager] No ad service available for revive.");
+            if (popupPanel != null) popupPanel.SetActive(true);
+            return;
+        }
+
+        Debug.Log("[PopupManager] Revive requested - playing ad.");
+        DummyRewardedAdService.Instance.ShowRewardedAd(
+            onReward: () =>
+            {
+                Debug.Log("[PopupManager] Revive ad complete. Granting one life.");
+                GameManager.Instance?.ReviveAfterAd();
+            },
+            onSkip: () =>
+            {
+                Debug.Log("[PopupManager] Revive ad skipped.");
+                ShowLose();
+            });
     }
 
     // Called by Retry button OnClick

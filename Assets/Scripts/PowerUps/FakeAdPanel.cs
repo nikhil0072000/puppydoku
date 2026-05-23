@@ -25,7 +25,7 @@ namespace PuppyPuzzle.PowerUps
         [Header("Settings")]
         [Tooltip("Seconds the fake ad 'plays' before the reward can be claimed.")]
         [Min(0f)]
-        [SerializeField] private float adDuration = 3f;
+        [SerializeField] private float adDuration = 5f;
 
         private Action _onWatched;
         private Action _onSkipped;

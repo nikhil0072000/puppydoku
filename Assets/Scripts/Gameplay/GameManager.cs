@@ -39,6 +39,7 @@ public class GameManager : MonoBehaviour
     private HashSet<Vector2Int> placedPuppies = new HashSet<Vector2Int>();
     private int lives;
     private bool gameOver = false;
+    private bool revivedThisLevel = false;
 
     // Most recently placed puppy — used by the Bulb hint as its focus cell.
     private Vector2Int? lastPlacedCell;
@@ -51,6 +52,7 @@ public class GameManager : MonoBehaviour
 
     // ---- Read-only state exposed to the power-up system ----
     public bool IsGameOver => gameOver;
+    public bool CanRevive => !revivedThisLevel;
     public GridManager Grid => gridManager;
     public int GridWidth => zoneMap != null ? zoneMap.GetLength(0) : 0;
     public int GridHeight => zoneMap != null ? zoneMap.GetLength(1) : 0;
@@ -197,6 +199,7 @@ public class GameManager : MonoBehaviour
         lastPlacedCell = null;
         lives = MaxLives;
         gameOver = false;
+        revivedThisLevel = false;
         LevelComplete = false;
         LevelFailed = false;
         InputLocked = false;
@@ -449,6 +452,23 @@ public class GameManager : MonoBehaviour
 
         if (PopupManager.Instance != null)
             PopupManager.Instance.ShowWin();
+    }
+
+    public void ReviveAfterAd()
+    {
+        if (!gameOver || revivedThisLevel)
+            return;
+
+        revivedThisLevel = true;
+        gameOver = false;
+        LevelFailed = false;
+        lives = 1;
+        InputLocked = false;
+
+        if (hudManager != null)
+            hudManager.UpdateHearts(lives);
+
+        Debug.Log("✨ Revive granted: one life restored. Resume play.");
     }
 
     private void Lose()
