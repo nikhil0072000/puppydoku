@@ -438,6 +438,15 @@ public class GameManager : MonoBehaviour
         gameOver = true;
         LevelComplete = true;
         Debug.Log("🎉 Level Complete!");
+
+        if (LevelLoader.Instance != null && LevelLoader.Instance.CurrentLevelType == LevelType.Tutorial)
+        {
+            LevelLoader.Instance.MarkTutorialCompleted();
+            if (PopupManager.Instance != null)
+                PopupManager.Instance.ShowTutorialComplete();
+            return;
+        }
+
         if (PopupManager.Instance != null)
             PopupManager.Instance.ShowWin();
     }

@@ -466,6 +466,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bad04abd12970f8448e509e5d3cf2c1b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HomeUI
+  levelLabelText: {fileID: 1951241759}
 --- !u!4 &423825294
 Transform:
   m_ObjectHideFlags: 0

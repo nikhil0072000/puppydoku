@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
@@ -9,6 +10,9 @@ using Newtonsoft.Json;
 
 public class LevelLoader : MonoBehaviour
 {
+    private const string TutorialCompleteKey = "TutorialCompleted";
+    private const string SavedLevelPositionKey = "SavedLevelPosition";
+
     public static LevelLoader Instance { get; private set; }
 
     [Header("Scenes")]
@@ -22,12 +26,18 @@ public class LevelLoader : MonoBehaviour
     [Header("Levels")]
     [SerializeField] private string levelsFolder = "Levels";
 
-    private readonly List<int> availableLevels = new();
+    private readonly List<LevelInfo> availableLevels = new();
     private int currentListPosition = -1;
+    private LevelInfo currentLevelInfo;
 
     public LevelDataModel CurrentLevelData { get; private set; }
     public Difficulty CurrentDifficulty { get; private set; } = Difficulty.Easy;
+    public LevelType CurrentLevelType => currentLevelInfo != null ? currentLevelInfo.Type : LevelType.Normal;
     public bool HasNextLevel => currentListPosition >= 0 && currentListPosition < availableLevels.Count - 1;
+    public bool HasTutorialLevel => availableLevels.Any(level => level.Type == LevelType.Tutorial);
+    public bool IsTutorialComplete => PlayerPrefs.GetInt(TutorialCompleteKey, 0) == 1;
+    public string CurrentLevelButtonLabel => currentLevelInfo != null ? currentLevelInfo.GetButtonLabel() : "Level 1";
+    public string NextLevelButtonLabel => HasNextLevel ? availableLevels[currentListPosition + 1].GetButtonLabel() : "";
 
     private bool levelLoaded = false;
 
@@ -48,12 +58,25 @@ public class LevelLoader : MonoBehaviour
 
         if (availableLevels.Count == 0)
         {
-            Debug.LogError("No level files found in StreamingAssets/Levels! Falling back to index 1.");
-            availableLevels.Add(1);
+            Debug.LogError("No level files found in StreamingAssets/Levels! Creating fallback data.");
+            availableLevels.Add(new LevelInfo
+            {
+                FileName = "Level_01",
+                FilePath = string.Empty,
+                FileKey = "01",
+                Type = LevelType.Normal,
+                DisplayName = "Level 1"
+            });
         }
 
-        // Initial load lands on Home so the player can press Play.
-        StartCoroutine(LoadLevelRoutine(availableLevels[0], homeSceneName));
+        if (!IsTutorialComplete && TryGetTutorialLevel(out LevelInfo tutorialLevel))
+        {
+            StartCoroutine(LoadLevelRoutine(tutorialLevel, gameSceneName));
+            return;
+        }
+
+        SetSavedLevelPosition();
+        StartCoroutine(LoadLevelRoutine(availableLevels[currentListPosition], homeSceneName));
     }
 
     private void ScanAvailableLevels()
@@ -68,32 +91,69 @@ public class LevelLoader : MonoBehaviour
         }
 
         string[] files = Directory.GetFiles(folder, "Level_*.json");
-        for (int i = 0; i < files.Length; i++)
+        foreach (string filePath in files)
         {
-            string name = Path.GetFileNameWithoutExtension(files[i]); // e.g., "Level_01"
-            string numberPart = name["Level_".Length..];
-            if (int.TryParse(numberPart, out int index))
-                availableLevels.Add(index);
+            string name = Path.GetFileNameWithoutExtension(filePath);
+            if (!name.StartsWith("Level_", System.StringComparison.OrdinalIgnoreCase))
+                continue;
+
+            string keyPart = name["Level_".Length..];
+            var levelInfo = new LevelInfo
+            {
+                FileName = name,
+                FilePath = filePath,
+                FileKey = keyPart
+            };
+
+            try
+            {
+                string json = File.ReadAllText(filePath);
+                LevelDataModel metadata = JsonConvert.DeserializeObject<LevelDataModel>(json);
+                if (metadata != null)
+                {
+                    levelInfo.Type = metadata.GetParsedLevelType();
+                    levelInfo.DisplayName = metadata.displayName;
+                }
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogWarning($"Failed to parse level metadata from {filePath}: {e.Message}");
+            }
+
+            availableLevels.Add(levelInfo);
         }
 
-        availableLevels.Sort();
-        Debug.Log($"Found {availableLevels.Count} level(s): {string.Join(", ", availableLevels)}");
+        availableLevels.Sort(CompareLevels);
+        Debug.Log($"Found {availableLevels.Count} level(s): {string.Join(", ", availableLevels.Select(level => level.GetButtonLabel()))}");
+
     }
 
-    private IEnumerator LoadLevelRoutine(int levelIndex, string targetScene)
+    private static int CompareLevels(LevelInfo a, LevelInfo b)
     {
-        currentListPosition = availableLevels.IndexOf(levelIndex);
+        if (a.Type != b.Type)
+            return a.Type == LevelType.Tutorial ? -1 : b.Type == LevelType.Tutorial ? 1 : 0;
+
+        if (int.TryParse(a.FileKey, out int aKey) && int.TryParse(b.FileKey, out int bKey))
+            return aKey.CompareTo(bKey);
+
+        return string.Compare(a.FileName, b.FileName, System.StringComparison.OrdinalIgnoreCase);
+    }
+
+    private IEnumerator LoadLevelRoutine(LevelInfo levelInfo, string targetScene)
+    {
+        currentListPosition = availableLevels.IndexOf(levelInfo);
         if (currentListPosition < 0)
         {
-            Debug.LogError($"Level index {levelIndex} not in available list; defaulting to first entry.");
+            Debug.LogError($"Level '{levelInfo.FileName}' not in available list; defaulting to first entry.");
             currentListPosition = 0;
-            levelIndex = availableLevels[0];
+            levelInfo = availableLevels[0];
         }
+
+        currentLevelInfo = levelInfo;
 
         if (progressSlider != null) progressSlider.value = 0f;
         if (progressText != null) progressText.text = "0%";
 
-        // --- Simulate initial work (fills bar 0% -> 30%) ---
         for (float i = 0f; i <= 0.3f; i += Time.deltaTime)
         {
             if (progressSlider != null) progressSlider.value = i;
@@ -101,19 +161,15 @@ public class LevelLoader : MonoBehaviour
             yield return null;
         }
 
-        // --- Actual JSON loading ---
-        string fileName = $"Level_{levelIndex:D2}";
-        string filePath = Path.Combine(Application.streamingAssetsPath, levelsFolder, $"{fileName}.json");
-
-        if (!File.Exists(filePath))
+        if (string.IsNullOrEmpty(levelInfo.FilePath) || !File.Exists(levelInfo.FilePath))
         {
-            Debug.LogError($"Level file not found: {filePath}. Creating fallback.");
+            Debug.LogError($"Level file not found: {levelInfo.FilePath}. Creating fallback.");
             CurrentLevelData = CreateFallbackLevel(4);
             CurrentDifficulty = Difficulty.Easy;
         }
         else
         {
-            string json = File.ReadAllText(filePath);
+            string json = File.ReadAllText(levelInfo.FilePath);
             CurrentLevelData = JsonConvert.DeserializeObject<LevelDataModel>(json);
 
             if (CurrentLevelData == null)
@@ -128,7 +184,9 @@ public class LevelLoader : MonoBehaviour
             }
         }
 
-        // --- Simulate finishing work ---
+        if (levelInfo.Type != LevelType.Tutorial)
+            SaveCurrentLevelPosition();
+
         for (float i = 0.3f; i <= 1f; i += Time.deltaTime * 1.5f)
         {
             if (progressSlider != null) progressSlider.value = i;
@@ -140,22 +198,43 @@ public class LevelLoader : MonoBehaviour
         if (progressText != null) progressText.text = "100%";
         levelLoaded = true;
 
-        Debug.Log($"Level {levelIndex} loaded. Switching to '{targetScene}'.");
+        Debug.Log($"Level '{levelInfo.GetButtonLabel()}' loaded. Switching to '{targetScene}'.");
         SceneManager.LoadScene(targetScene);
     }
 
-    // Called from Home scene Play button — always starts from the first level.
-    public void LoadFirstAvailableLevel()
+    public void LoadCurrentLevel()
     {
         if (availableLevels.Count == 0)
         {
             Debug.LogError("No levels available to load!");
             return;
         }
-        StartCoroutine(LoadLevelRoutine(availableLevels[0], gameSceneName));
+
+        if (currentListPosition < 0 || currentListPosition >= availableLevels.Count)
+            SetSavedLevelPosition();
+
+        StartCoroutine(LoadLevelRoutine(availableLevels[currentListPosition], gameSceneName));
     }
 
-    // Called from the win popup's Next Level button.
+    public void LoadFirstAvailableLevel()
+    {
+        LoadCurrentLevel();
+    }
+
+    public void LoadFirstNormalLevel()
+    {
+        LevelInfo firstNormal = availableLevels.FirstOrDefault(level => level.Type != LevelType.Tutorial);
+        if (firstNormal == null)
+        {
+            Debug.LogError("No normal levels available to start the game.");
+            return;
+        }
+
+        currentListPosition = availableLevels.IndexOf(firstNormal);
+        SaveCurrentLevelPosition();
+        StartCoroutine(LoadLevelRoutine(firstNormal, gameSceneName));
+    }
+
     public void LoadNextLevel()
     {
         if (!HasNextLevel)
@@ -164,8 +243,46 @@ public class LevelLoader : MonoBehaviour
             return;
         }
 
-        int nextIndex = availableLevels[currentListPosition + 1];
-        StartCoroutine(LoadLevelRoutine(nextIndex, gameSceneName));
+        LevelInfo nextLevel = availableLevels[currentListPosition + 1];
+        StartCoroutine(LoadLevelRoutine(nextLevel, gameSceneName));
+    }
+
+    public void MarkTutorialCompleted()
+    {
+        if (IsTutorialComplete) return;
+
+        PlayerPrefs.SetInt(TutorialCompleteKey, 1);
+        int normalIndex = availableLevels.FindIndex(level => level.Type != LevelType.Tutorial);
+        currentListPosition = normalIndex >= 0 ? normalIndex : 0;
+        SaveCurrentLevelPosition();
+        PlayerPrefs.Save();
+    }
+
+    private void SetSavedLevelPosition()
+    {
+        int savedPosition = PlayerPrefs.GetInt(SavedLevelPositionKey, 0);
+        if (savedPosition < 0 || savedPosition >= availableLevels.Count)
+            savedPosition = 0;
+
+        if (savedPosition >= 0 && savedPosition < availableLevels.Count && availableLevels[savedPosition].Type == LevelType.Tutorial)
+        {
+            int normalIndex = availableLevels.FindIndex(level => level.Type != LevelType.Tutorial);
+            savedPosition = normalIndex >= 0 ? normalIndex : savedPosition;
+        }
+
+        currentListPosition = savedPosition;
+    }
+
+    private void SaveCurrentLevelPosition()
+    {
+        PlayerPrefs.SetInt(SavedLevelPositionKey, currentListPosition);
+        PlayerPrefs.Save();
+    }
+
+    private bool TryGetTutorialLevel(out LevelInfo tutorialLevel)
+    {
+        tutorialLevel = availableLevels.FirstOrDefault(level => level.Type == LevelType.Tutorial);
+        return tutorialLevel != null;
     }
 
     // Legacy entry point — kept for any existing wiring that still calls it.
@@ -205,5 +322,31 @@ public class LevelLoader : MonoBehaviour
         for (int i = 0; i < size; i++)
             fallback.colorData[i] = new int[size];
         return fallback;
+    }
+
+    private sealed class LevelInfo
+    {
+        public string FileName;
+        public string FilePath;
+        public string FileKey;
+        public LevelType Type = LevelType.Normal;
+        public string DisplayName;
+
+        public string GetButtonLabel()
+        {
+            if (Type == LevelType.Tutorial)
+                return "Tutorial";
+
+            if (!string.IsNullOrWhiteSpace(DisplayName))
+                return DisplayName.Trim();
+
+            if (int.TryParse(FileKey, out int parsed))
+                return $"Level {parsed}";
+
+            if (!string.IsNullOrWhiteSpace(FileKey))
+                return FileKey;
+
+            return FileName ?? "Level";
+        }
     }
 }

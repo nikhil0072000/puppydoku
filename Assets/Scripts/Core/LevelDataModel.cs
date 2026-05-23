@@ -8,10 +8,67 @@ public class LevelDataModel
     public string levelId = "Unknown";
     public string difficulty = "Easy";
     public int gridSize = 4;
+    public string levelType = "Normal";
+    public string displayName;
     public int[][] colorData;            // jagged array for JSON
     public PrePlacedData[] prePlaced;    // array of {x, y}
     public PrePlacedData[] solution;    // hidden solved puppy positions
     public int winCondition = -1;        // -1 means auto-calculate from colorData
+
+    public LevelType GetParsedLevelType()
+    {
+        if (string.IsNullOrWhiteSpace(levelType))
+            return LevelType.Normal;
+
+        switch (levelType.Trim().ToLowerInvariant())
+        {
+            case "tutorial":
+                return LevelType.Tutorial;
+            case "dailychallenge":
+            case "daily":
+                return LevelType.DailyChallenge;
+            case "event":
+                return LevelType.Event;
+            default:
+                return LevelType.Normal;
+        }
+    }
+
+    public string GetButtonLabel(string fileNamePart = null)
+    {
+        if (GetParsedLevelType() == LevelType.Tutorial)
+            return "Tutorial";
+
+        if (!string.IsNullOrWhiteSpace(displayName))
+            return displayName.Trim();
+
+        int number = ParseNumberFromCandidate(fileNamePart) ?? ParseNumberFromCandidate(levelId) ?? -1;
+        if (number > 0)
+            return $"Level {number}";
+
+        if (!string.IsNullOrWhiteSpace(levelId) && !string.Equals(levelId, "Unknown", StringComparison.OrdinalIgnoreCase))
+            return levelId.Trim();
+
+        if (!string.IsNullOrWhiteSpace(fileNamePart))
+            return fileNamePart.Trim();
+
+        return "Level";
+    }
+
+    private int? ParseNumberFromCandidate(string candidate)
+    {
+        if (string.IsNullOrWhiteSpace(candidate))
+            return null;
+
+        string text = candidate.Trim();
+        if (text.StartsWith("Level_", StringComparison.OrdinalIgnoreCase))
+            text = text["Level_".Length..].Trim();
+
+        if (int.TryParse(text, out int result))
+            return result;
+
+        return null;
+    }
 
     // ----- Safe accessors with fallbacks -----
     public int GetSafeGridSize() => gridSize > 0 ? gridSize : 4;
