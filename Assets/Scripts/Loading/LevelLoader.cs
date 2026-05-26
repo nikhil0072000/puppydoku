@@ -6,8 +6,6 @@ using System.Linq;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
-using UnityEngine.AddressableAssets;
-using UnityEngine.ResourceManagement.AsyncOperations;
 using TMPro;
 using Newtonsoft.Json;
 
@@ -32,8 +30,6 @@ public class LevelLoader : MonoBehaviour
     private readonly List<LevelInfo> availableLevels = new();
     private int currentListPosition = -1;
     private LevelInfo currentLevelInfo;
-    private TextAsset currentLevelTextAsset;
-    private AsyncOperationHandle<TextAsset> currentLoadHandle;
 
     public LevelDataModel CurrentLevelData { get; private set; }
     public Difficulty CurrentDifficulty { get; private set; } = Difficulty.Easy;
@@ -61,7 +57,6 @@ public class LevelLoader : MonoBehaviour
         {
             Instance = this;
             DontDestroyOnLoad(gameObject);
-            SceneManager.sceneUnloaded += OnSceneUnloaded;
         }
         else
         {
@@ -97,43 +92,6 @@ public class LevelLoader : MonoBehaviour
     {
         availableLevels.Clear();
 
-        // Attempt to load from Addressables first
-        var loadLocationsHandle = Addressables.LoadResourceLocationsAsync("LevelJSON", typeof(TextAsset));
-        loadLocationsHandle.WaitForCompletion();
-
-        if (loadLocationsHandle.Status == AsyncOperationStatus.Succeeded && loadLocationsHandle.Result.Count > 0)
-        {
-            // Load from Addressables
-            foreach (var location in loadLocationsHandle.Result)
-            {
-                string address = location.PrimaryKey;
-                string fileName = Path.GetFileNameWithoutExtension(address);
-
-                if (!LevelDataModel.TryParseFileName(fileName, out LevelType type, out string keyPart))
-                    continue;
-
-                availableLevels.Add(new LevelInfo
-                {
-                    FileName = fileName,
-                    FilePath = string.Empty,
-                    AddressablePath = address,
-                    FileKey = keyPart,
-                    Type = type
-                });
-            }
-
-            Addressables.Release(loadLocationsHandle);
-            Debug.Log($"Loaded {availableLevels.Count} level(s) from Addressables: {string.Join(", ", availableLevels.Select(level => level.GetButtonLabel()))}");
-            availableLevels.Sort(CompareLevels);
-            return;
-        }
-
-        // Fallback to StreamingAssets for backward compatibility
-        Debug.LogWarning("Addressables LevelJSON label not found. Falling back to StreamingAssets.");
-        
-        if (loadLocationsHandle.IsValid())
-            Addressables.Release(loadLocationsHandle);
-
         string folder = Path.Combine(Application.streamingAssetsPath, levelsFolder);
         if (!Directory.Exists(folder))
         {
@@ -153,14 +111,14 @@ public class LevelLoader : MonoBehaviour
             {
                 FileName = name,
                 FilePath = filePath,
-                AddressablePath = string.Empty,
                 FileKey = keyPart,
                 Type = type
             });
         }
 
         availableLevels.Sort(CompareLevels);
-        Debug.Log($"Found {availableLevels.Count} level(s) in StreamingAssets: {string.Join(", ", availableLevels.Select(level => level.GetButtonLabel()))}");
+        Debug.Log($"Found {availableLevels.Count} level(s): {string.Join(", ", availableLevels.Select(level => level.GetButtonLabel()))}");
+
     }
 
     private static int CompareLevels(LevelInfo a, LevelInfo b)
@@ -196,43 +154,14 @@ public class LevelLoader : MonoBehaviour
             yield return null;
         }
 
-        // Release previous level's TextAsset if any
-        ReleaseCurrentLevelAsset();
-
-        // Load level data: try Addressables first, fall back to StreamingAssets
-        if (!string.IsNullOrEmpty(levelInfo.AddressablePath))
+        if (string.IsNullOrEmpty(levelInfo.FilePath) || !File.Exists(levelInfo.FilePath))
         {
-            // Load via Addressables (async)
-            currentLoadHandle = Addressables.LoadAssetAsync<TextAsset>(levelInfo.AddressablePath);
-            yield return currentLoadHandle;
-
-            if (currentLoadHandle.Status == AsyncOperationStatus.Succeeded)
-            {
-                currentLevelTextAsset = currentLoadHandle.Result;
-                string json = currentLevelTextAsset.text;
-                CurrentLevelData = JsonConvert.DeserializeObject<LevelDataModel>(json);
-
-                if (CurrentLevelData == null)
-                {
-                    Debug.LogError("Deserialization returned null, using fallback.");
-                    CurrentLevelData = CreateFallbackLevel(4);
-                    CurrentDifficulty = Difficulty.Easy;
-                }
-                else
-                {
-                    CurrentDifficulty = ParseDifficulty(CurrentLevelData.difficulty);
-                }
-            }
-            else
-            {
-                Debug.LogError($"Failed to load level from Addressables '{levelInfo.AddressablePath}': {currentLoadHandle.Status}. Using fallback.");
-                CurrentLevelData = CreateFallbackLevel(4);
-                CurrentDifficulty = Difficulty.Easy;
-            }
+            Debug.LogError($"Level file not found: {levelInfo.FilePath}. Creating fallback.");
+            CurrentLevelData = CreateFallbackLevel(4);
+            CurrentDifficulty = Difficulty.Easy;
         }
-        else if (!string.IsNullOrEmpty(levelInfo.FilePath) && File.Exists(levelInfo.FilePath))
+        else
         {
-            // Fallback to StreamingAssets
             string json = File.ReadAllText(levelInfo.FilePath);
             CurrentLevelData = JsonConvert.DeserializeObject<LevelDataModel>(json);
 
@@ -246,12 +175,6 @@ public class LevelLoader : MonoBehaviour
             {
                 CurrentDifficulty = ParseDifficulty(CurrentLevelData.difficulty);
             }
-        }
-        else
-        {
-            Debug.LogError($"Level file not found or no valid path: {levelInfo.FileName}. Creating fallback.");
-            CurrentLevelData = CreateFallbackLevel(4);
-            CurrentDifficulty = Difficulty.Easy;
         }
 
         if (levelInfo.Type == LevelType.Normal && !IsDailySession)
@@ -458,29 +381,6 @@ public class LevelLoader : MonoBehaviour
         SceneManager.LoadScene(gameSceneName);
     }
 
-    private void OnSceneUnloaded(Scene scene)
-    {
-        if (scene.name == gameSceneName)
-        {
-            ReleaseCurrentLevelAsset();
-        }
-    }
-
-    private void ReleaseCurrentLevelAsset()
-    {
-        if (currentLoadHandle.IsValid())
-        {
-            Addressables.Release(currentLoadHandle);
-            currentLevelTextAsset = null;
-            Debug.Log("Released current level asset.");
-        }
-    }
-
-    private void OnDestroy()
-    {
-        SceneManager.sceneUnloaded -= OnSceneUnloaded;
-    }
-
     private Difficulty ParseDifficulty(string diff)
     {
         if (string.IsNullOrEmpty(diff)) return Difficulty.Easy;
@@ -513,7 +413,6 @@ public class LevelLoader : MonoBehaviour
     {
         public string FileName;
         public string FilePath;
-        public string AddressablePath;
         public string FileKey;
         public LevelType Type = LevelType.Normal;
 
