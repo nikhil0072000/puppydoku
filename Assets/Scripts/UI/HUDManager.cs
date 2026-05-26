@@ -18,6 +18,26 @@ public class HUDManager : MonoBehaviour
     [Header("Daily Timer")]
     [SerializeField] private TextMeshProUGUI dailyTimerText;
 
+    private void Awake()
+    {
+        ApplyTheme();
+    }
+
+    /// <summary>
+    /// Applies theme-driven sprites at startup. Called from Awake so theme is
+    /// applied before any hearts are updated.
+    /// </summary>
+    private void ApplyTheme()
+    {
+        ThemeData theme = ThemeManager.Current;
+        if (theme == null) return;
+
+        if (theme.hudHeartFullSprite != null)
+            fullHeart = theme.hudHeartFullSprite;
+        if (theme.hudHeartEmptySprite != null)
+            emptyHeart = theme.hudHeartEmptySprite;
+    }
+
     public void UpdateHearts(int currentLives)
     {
         for (int i = 0; i < heartImages.Length; i++)

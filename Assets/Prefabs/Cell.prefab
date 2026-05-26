@@ -644,6 +644,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ada62d95c7e148d4da7199b097e6690d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Cell
+  backgroundSprite: {fileID: 1915397999975441213}
   zoneOverlay: {fileID: 1915397999975441213}
   whiteOverlay: {fileID: 7941853052903263041}
   line1: {fileID: 2624851208037846909}

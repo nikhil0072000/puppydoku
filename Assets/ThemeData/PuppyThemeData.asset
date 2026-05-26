@@ -1,0 +1,32 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 25d1584cb348be34db376394d8703167, type: 3}
+  m_Name: PuppyThemeData
+  m_EditorClassIdentifier: Assembly-CSharp::ThemeData
+  puppyPrefab: {fileID: 633740796731822192, guid: 4fcec00176ab92a4ea11e839001bd329, type: 3}
+  puppyAnimatorController: {fileID: 9100000, guid: cbc0434bb3896e64f8516d07013d3476, type: 2}
+  puppyIdleSprite: {fileID: 1349007405669926491, guid: f06faf69caf55ec4ab8a847f1a0d3ddf, type: 3}
+  cellZoneOverlaySprite: {fileID: 3760543699581768375, guid: ea90928bd479ced458d707c66d74aa8f, type: 3}
+  cellBackgroundSprite: {fileID: 3760543699581768375, guid: ea90928bd479ced458d707c66d74aa8f, type: 3}
+  whiteOverlayColor: {r: 1, g: 1, b: 1, a: 1}
+  errorCrossColor: {r: 1, g: 0.28627452, b: 0, a: 1}
+  hintGlowColor: {r: 1, g: 0.78431374, b: 0.23529412, a: 1}
+  useThemeHeartBreak: 1
+  heartFullSprite: {fileID: -7332903843279475702, guid: be712f29052db244e9da4b59ffc5cc70, type: 3}
+  heartLeftBrokenSprite: {fileID: 601210362273903655, guid: 269208869c984d04abbea384a1a83c4b, type: 3}
+  heartRightBrokenSprite: {fileID: -2234882009152606292, guid: dfec8c702917e9c488dcd95b6a77b861, type: 3}
+  hudHeartFullSprite: {fileID: 7634412593342618640, guid: d28a455587892a745aa9edf6e621da70, type: 3}
+  hudHeartEmptySprite: {fileID: 8100987493207310808, guid: a195959890f5e294fbb467f85f019459, type: 3}
+  gameBackgroundSprite: {fileID: 5111230588992498239, guid: 70105c3a57d846541a31de3fd3f306b5, type: 3}
+  gameBackgroundColor: {r: 1, g: 1, b: 1, a: 1}
+  vfxConfig: {fileID: 11400000, guid: 7c0664c112ac5c84787032cdaf92f811, type: 2}
+  sfxConfig: {fileID: 11400000, guid: 917a4f6771f689c44a1a5c90573b1d57, type: 2}

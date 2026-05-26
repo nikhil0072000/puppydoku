@@ -17,7 +17,11 @@ public class GameManager : MonoBehaviour
 
     [Header("References")]
     [SerializeField] private GridManager gridManager;
+    /// <summary>Cached puppy prefab. Can be overridden by the active theme.</summary>
     [SerializeField] private GameObject puppyPrefab;
+    private GameObject ResolvedPuppyPrefab => ThemeManager.Current?.puppyPrefab != null
+        ? ThemeManager.Current.puppyPrefab
+        : puppyPrefab;
     [SerializeField] private HUDManager hudManager;
     [SerializeField] private GridAnimator gridAnimator;
 
@@ -149,7 +153,7 @@ public class GameManager : MonoBehaviour
     //         Cell cell = gridManager.GetCell(pos.x, pos.y);
     //         if (cell != null)
     //         {
-    //             PuzzleObject pup = cell.PlacePuppy(puppyPrefab);
+    //             PuzzleObject pup = cell.PlacePuppy(ResolvedPuppyPrefab);
     //             if (pup != null)
     //             {
     //                 cell.isGiven = true;
@@ -229,7 +233,7 @@ public class GameManager : MonoBehaviour
             Cell cell = gridManager.GetCell(pos.x, pos.y);
             if (cell == null) continue;
 
-            PuzzleObject pup = cell.PlacePuppy(puppyPrefab);
+            PuzzleObject pup = cell.PlacePuppy(ResolvedPuppyPrefab);
             if (pup == null) continue;
 
             cell.isGiven = true;
@@ -349,7 +353,7 @@ public class GameManager : MonoBehaviour
         Cell cell = gridManager.GetCell(pos.x, pos.y);
         if (cell == null) return false;
 
-        PuzzleObject pup = cell.PlacePuppy(puppyPrefab);
+        PuzzleObject pup = cell.PlacePuppy(ResolvedPuppyPrefab);
         if (pup == null) return false;
 
         placedPuppies.Add(pos);

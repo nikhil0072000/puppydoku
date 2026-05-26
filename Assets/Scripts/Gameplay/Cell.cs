@@ -6,6 +6,9 @@ public class Cell : MonoBehaviour
 {
     public static event Action<Vector2Int> OnCellDoubleTapped;
 
+    [Header("Cell Visuals")]
+    [SerializeField] private SpriteRenderer backgroundSprite;
+
     [Header("Visual Elements")]
     [SerializeField] private SpriteRenderer zoneOverlay;
     [SerializeField] private SpriteRenderer whiteOverlay;
@@ -131,6 +134,11 @@ public class Cell : MonoBehaviour
         transform.localScale = restingScale;
         runtimeRestingScale = restingScale;
 
+        // --- Theme-driven visual application ---
+        ThemeData theme = ThemeManager.Current;
+        ApplyTheme(theme);
+        // --- End theme ---
+
         if (zoneOverlay != null)
             zoneOverlay.color = zoneColor;
 
@@ -166,6 +174,18 @@ public class Cell : MonoBehaviour
         isDimmed = false;
 
         gameObject.name = $"Cell_{x}_{y}_Zone{zone}";
+    }
+
+    private Color GetErrorColor()
+    {
+        ThemeData theme = ThemeManager.Current;
+        return theme != null ? theme.errorCrossColor : errorColor;
+    }
+
+    private Color GetHintGlowColor()
+    {
+        ThemeData theme = ThemeManager.Current;
+        return theme != null ? theme.hintGlowColor : hintFocusColor;
     }
 
     // ---- Single tap: toggle white X ----
@@ -282,6 +302,8 @@ public class Cell : MonoBehaviour
         KillAllTweens();
         isAnimating = true;
 
+        Color currentErrColor = GetErrorColor();
+
         // Pre-stage X lines hidden at width-0; coloured WHITE for step 4.
         if (line1 != null)
         {
@@ -322,7 +344,7 @@ public class Cell : MonoBehaviour
 
         // Step 3 — zone overlay flips to error red.
         if (zoneOverlay != null)
-            errSeq.Append(zoneOverlay.DOColor(errorColor, zoneTintInDuration).SetEase(Ease.OutQuad));
+            errSeq.Append(zoneOverlay.DOColor(currentErrColor, zoneTintInDuration).SetEase(Ease.OutQuad));
         else
             errSeq.AppendInterval(zoneTintInDuration);
 
@@ -364,8 +386,9 @@ public class Cell : MonoBehaviour
         // Step 8 — RED X draws with overshoot, permanent.
         errSeq.AppendCallback(() =>
         {
-            if (line1 != null) line1.color = errorColor;
-            if (line2 != null) line2.color = errorColor;
+            Color fixedErrorColor = GetErrorColor();
+            if (line1 != null) line1.color = fixedErrorColor;
+            if (line2 != null) line2.color = fixedErrorColor;
         });
         Sequence redDrawSeq = DOTween.Sequence();
         if (line1 != null)
@@ -450,7 +473,25 @@ public class Cell : MonoBehaviour
 
     public void AttemptPlacement() => OnDoubleTap();
 
-    // ---- Hint power-up (Bulb): focus glow, dimming, ghost X preview ----
+    // ---- Theme application (visual-only) ----
+    /// <summary>
+    /// Applies theme-driven visuals to this cell. Called once during Init.
+    /// Does NOT touch gameplay state.
+    /// </summary>
+    private void ApplyTheme(ThemeData theme)
+    {
+        if (theme == null) return;
+
+        if (zoneOverlay != null)
+        {
+            if (theme.cellZoneOverlaySprite != null)
+                zoneOverlay.sprite = theme.cellZoneOverlaySprite;
+            whiteOverlay.color = theme.whiteOverlayColor;
+        }
+
+        if (backgroundSprite != null && theme.cellBackgroundSprite != null)
+            backgroundSprite.sprite = theme.cellBackgroundSprite;
+    }
 
     /// <summary>True when this cell can receive a hint preview X (empty, not given, not error-locked).</summary>
     public bool CanReceiveHint => currentPuppy == null && !isGiven && !IsErrorLocked;
@@ -465,7 +506,7 @@ public class Cell : MonoBehaviour
         glow.DOKill();
         glow.transform.DOKill();
 
-        Color c = (highlightOverlay != null) ? glow.color : hintFocusColor;
+        Color c = (highlightOverlay != null) ? glow.color : GetHintGlowColor();
         c.a = 0f;
         glow.color = c;
 

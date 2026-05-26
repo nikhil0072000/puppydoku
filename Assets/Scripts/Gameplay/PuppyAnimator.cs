@@ -36,12 +36,31 @@ public class PuppyAnimator : MonoBehaviour
     private static readonly int WinkHash = Animator.StringToHash("PlayWink");
     private static readonly int SadHash  = Animator.StringToHash("PlaySad");
 
+    private SpriteRenderer _spriteRenderer;
     private Vector3 _idleScale;
 
     private void Awake()
     {
         if (_animator == null) TryGetComponent(out _animator);
+        TryGetComponent(out _spriteRenderer);
         _idleScale = transform.localScale;
+    }
+
+    private void Start()
+    {
+        ApplyTheme();
+    }
+
+    private void ApplyTheme()
+    {
+        ThemeData theme = ThemeManager.Current;
+        if (theme == null) return;
+
+        if (theme.puppyAnimatorController != null && _animator != null)
+            _animator.runtimeAnimatorController = theme.puppyAnimatorController;
+
+        if (theme.puppyIdleSprite != null && _spriteRenderer != null)
+            _spriteRenderer.sprite = theme.puppyIdleSprite;
     }
 
     public void PlayWink()
