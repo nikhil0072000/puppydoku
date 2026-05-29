@@ -69,6 +69,11 @@ public class GameManager : MonoBehaviour
 
     void Awake()
     {
+        if (Instance != null && Instance != this)
+        {
+            Destroy(gameObject);
+            return;
+        }
         Instance = this;
     }
 
@@ -98,6 +103,8 @@ public class GameManager : MonoBehaviour
     void OnDestroy()
     {
         Cell.OnCellDoubleTapped -= OnCellDoubleTapped;
+        if (Instance == this)
+            Instance = null;
     }
 
     /// <summary>
@@ -291,6 +298,9 @@ public class GameManager : MonoBehaviour
     {
         if (gameOver) return;
 
+        // Guard against taps arriving before the level finished loading.
+        if (zoneMap == null) return;
+
         if (pos.x < 0 || pos.x >= zoneMap.GetLength(0) || pos.y < 0 || pos.y >= zoneMap.GetLength(1))
             return;
 
@@ -397,6 +407,7 @@ public class GameManager : MonoBehaviour
     public bool PlacePuppyAtIfValid(Vector2Int pos)
     {
         if (gameOver) return false;
+        if (zoneMap == null) return false;
 
         Cell cell = gridManager.GetCell(pos.x, pos.y);
         if (cell == null || cell.GetPuppy() != null) return false;

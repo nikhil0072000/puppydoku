@@ -15,6 +15,7 @@ public class DailyChallengeHomeUI : MonoBehaviour
 
     private TextMeshProUGUI buttonLabel;
     private float refreshTimer;
+    private string _lastSubtitle;
 
     private void Awake()
     {
@@ -75,8 +76,16 @@ public class DailyChallengeHomeUI : MonoBehaviour
 
     private void RefreshSubtitle()
     {
-        if (subtitleText != null)
-            subtitleText.text = DailyChallengeManager.Instance.GetDailySubtitleText();
+        if (subtitleText == null || DailyChallengeManager.Instance == null)
+            return;
+
+        // Only reassign (and trigger a TMP rebuild) when the countdown string actually changes.
+        string subtitle = DailyChallengeManager.Instance.GetDailySubtitleText();
+        if (subtitle == _lastSubtitle)
+            return;
+
+        _lastSubtitle = subtitle;
+        subtitleText.text = subtitle;
     }
 
     public void OnDailyButtonClicked()

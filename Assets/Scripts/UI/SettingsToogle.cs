@@ -31,11 +31,40 @@ public class SettingsToogle : MonoBehaviour
     [SerializeField] private bool isSoundToggle;
     [SerializeField] private bool isHapticToggle;
 
+    // PlayerPrefs keys for the two persisted settings. Other systems read these (e.g. a
+    // haptic helper checks HapticKey before vibrating); sound is applied here via AudioListener.
+    public const string SoundPrefKey = "Settings.Sound";
+    public const string HapticPrefKey = "Settings.Haptic";
+
     private bool isAnimating;
 
     private void Start()
     {
+        LoadState();
         UpdateVisualInstant();
+        ApplySetting();
+    }
+
+    private void OnDestroy()
+    {
+        // Kill any tweens (and the DelayedCall) still running, so their callbacks can't
+        // fire on destroyed RectTransforms after a scene unload.
+        DOTween.Kill(gameObject);
+    }
+
+    private void LoadState()
+    {
+        if (isSoundToggle)
+            isOn = PlayerPrefs.GetInt(SoundPrefKey, 1) == 1;
+        else if (isHapticToggle)
+            isOn = PlayerPrefs.GetInt(HapticPrefKey, 1) == 1;
+    }
+
+    private void ApplySetting()
+    {
+        if (isSoundToggle)
+            AudioListener.volume = isOn ? 1f : 0f;
+        // Haptic is consumed by the haptic helper at call sites; only persistence is needed here.
     }
 
     public void Toggle()
@@ -46,14 +75,14 @@ public class SettingsToogle : MonoBehaviour
         AnimateToggle();
 
         if (isSoundToggle)
-        {
-            Debug.Log(isOn ? "Sound ON" : "Sound OFF");
-        }
+            PlayerPrefs.SetInt(SoundPrefKey, isOn ? 1 : 0);
+        else if (isHapticToggle)
+            PlayerPrefs.SetInt(HapticPrefKey, isOn ? 1 : 0);
 
-        if (isHapticToggle)
-        {
-            Debug.Log(isOn ? "Haptic ON" : "Haptic OFF");
-        }
+        if (isSoundToggle || isHapticToggle)
+            PlayerPrefs.Save();
+
+        ApplySetting();
     }
 
     private void AnimateToggle()
@@ -62,23 +91,31 @@ public class SettingsToogle : MonoBehaviour
 
         float targetX = isOn ? handleOnX : handleOffX;
 
+        // All tweens are linked to this GameObject so they're killed automatically if it's
+        // destroyed mid-animation (prevents callbacks writing to destroyed RectTransforms).
         handle.DOKill();
-        handle.DOAnchorPosX(targetX, duration).SetEase(Ease.OutBack);
+        handle.DOAnchorPosX(targetX, duration).SetEase(Ease.OutBack)
+              .SetLink(gameObject, LinkBehaviour.KillOnDestroy);
 
         Sequence handleSeq = DOTween.Sequence();
+        handleSeq.SetLink(gameObject, LinkBehaviour.KillOnDestroy);
         handleSeq.Append(handle.DOScale(0.85f, 0.08f));
         handleSeq.Append(handle.DOScale(1f, 0.12f));
 
         Color targetColor = isOn ? onColor : offColor;
-        fillArea.DOColor(targetColor, duration);
+        fillArea.DOColor(targetColor, duration)
+                .SetLink(gameObject, LinkBehaviour.KillOnDestroy);
 
         onOffTextImage.sprite = isOn ? onSprite : offSprite;
 
         fillArea.rectTransform
             .DOScale(1.05f, 0.1f)
-            .OnComplete(() => fillArea.rectTransform.DOScale(1f, 0.1f));
+            .SetLink(gameObject, LinkBehaviour.KillOnDestroy)
+            .OnComplete(() => fillArea.rectTransform.DOScale(1f, 0.1f)
+                .SetLink(gameObject, LinkBehaviour.KillOnDestroy));
 
-        DOVirtual.DelayedCall(duration, () => isAnimating = false);
+        DOVirtual.DelayedCall(duration, () => isAnimating = false)
+                 .SetLink(gameObject, LinkBehaviour.KillOnDestroy);
     }
 
     private void UpdateVisualInstant()

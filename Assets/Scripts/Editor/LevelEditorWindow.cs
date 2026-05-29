@@ -25,6 +25,7 @@ public class LevelEditorWindow : EditorWindow
     // ---------- Color palette (taken from GridConfig at runtime) ----------
     private Color[] paletteColors;     // actual Unity Colors for each ColorID
     private string[] paletteNames;     // names of the ColorID values
+    private int[] paletteIds;          // the underlying ColorID integer value for each palette slot
 
     [MenuItem("Window/PuppyPuzzle/Level Editor")]
     public static void ShowWindow()
@@ -47,6 +48,7 @@ public class LevelEditorWindow : EditorWindow
             Debug.LogError("GridConfig not found in Resources!");
             paletteColors = new Color[] { Color.white };
             paletteNames = new string[] { "0" };
+            paletteIds = new int[] { 0 };
             return;
         }
 
@@ -54,14 +56,30 @@ public class LevelEditorWindow : EditorWindow
         var enumValues = System.Enum.GetValues(typeof(ColorID));
         paletteColors = new Color[enumValues.Length];
         paletteNames = new string[enumValues.Length];
+        paletteIds = new int[enumValues.Length];
 
         int i = 0;
         foreach (ColorID cid in enumValues)
         {
             paletteColors[i] = config.GetColor(cid);
             paletteNames[i] = cid.ToString();
+            paletteIds[i] = (int)cid;   // store the real enum value, not the loop index
             i++;
         }
+
+        selectedColorId = paletteIds.Length > 0 ? paletteIds[0] : 0;
+    }
+
+    /// <summary>Maps a stored ColorID value back to its palette colour (handles non-contiguous enums).</summary>
+    private Color GetPaletteColor(int colorId)
+    {
+        if (paletteIds != null)
+        {
+            for (int i = 0; i < paletteIds.Length; i++)
+                if (paletteIds[i] == colorId)
+                    return paletteColors[i];
+        }
+        return Color.white;
     }
 
     void OnGUI()
@@ -112,7 +130,7 @@ public class LevelEditorWindow : EditorWindow
                     GUI.color = paletteColors[i];
                     if (GUILayout.Button(paletteNames[i], GUILayout.Width(80), GUILayout.Height(30)))
                     {
-                        selectedColorId = i;   // assuming palette index matches ColorID enum order
+                        selectedColorId = paletteIds[i];   // store the real ColorID value
                     }
                 }
                 GUI.color = Color.white;
@@ -137,7 +155,7 @@ public class LevelEditorWindow : EditorWindow
             for (int x = 0; x < gridSize; x++)
             {
                 int cid = colorData[x, y];
-                Color cellColor = (cid >= 0 && cid < paletteColors.Length) ? paletteColors[cid] : Color.white;
+                Color cellColor = GetPaletteColor(cid);
                 GUI.backgroundColor = cellColor;
 
                 string label = prePlacedPositions.Contains(new Vector2Int(x, y)) ? "🐾" : "";

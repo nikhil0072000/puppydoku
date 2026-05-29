@@ -13,6 +13,10 @@ public class InputManager : MonoBehaviour
     // One pending-tap entry per cell, shared by mouse and touch.
     private readonly Dictionary<Cell, Coroutine> pendingTaps = new();
 
+    // Caches the Cell behind each collider so the swipe path doesn't GetComponent every
+    // pointer-move frame. Entries are re-resolved if a cached cell has been destroyed.
+    private readonly Dictionary<Collider2D, Cell> cellByCollider = new();
+
     private Camera mainCam;
     private WaitForSeconds doubleTapWait;
 
@@ -54,6 +58,27 @@ public class InputManager : MonoBehaviour
         Touch.onFingerMove -= OnFingerMove;
         Touch.onFingerUp -= OnFingerUp;
         EnhancedTouchSupport.Disable();
+        ClearPendingState();
+    }
+
+    /// <summary>
+    /// Cancels any in-flight single-tap coroutines and resets pointer/swipe state. Call
+    /// when the grid is rebuilt in-scene so pending taps can't fire on destroyed cells.
+    /// </summary>
+    public void ClearPendingState()
+    {
+        foreach (Coroutine pending in pendingTaps.Values)
+            if (pending != null) StopCoroutine(pending);
+        pendingTaps.Clear();
+        cellByCollider.Clear();
+
+        pointerDown = false;
+        swipeActive = false;
+        activeTouchId = -1;
+        swipeStartCell = null;
+        lastSwipedCell = null;
+        swipeCells.Clear();
+        swipeCellsOrdered.Clear();
     }
 
     void Update()
@@ -178,9 +203,22 @@ public class InputManager : MonoBehaviour
 
     private Cell GetCellAtScreenPosition(Vector2 screenPosition)
     {
+        if (mainCam == null)
+            return null;
+
         Ray ray = mainCam.ScreenPointToRay(screenPosition);
         RaycastHit2D hit = Physics2D.Raycast(ray.origin, ray.direction);
-        return hit.collider?.GetComponent<Cell>();
+        Collider2D col = hit.collider;
+        if (col == null)
+            return null;
+
+        if (cellByCollider.TryGetValue(col, out Cell cached) && cached != null)
+            return cached;
+
+        Cell cell = col.GetComponent<Cell>();
+        if (cell != null)
+            cellByCollider[col] = cell;
+        return cell;
     }
 
     private void CancelPendingTap(Cell cell)
@@ -215,11 +253,7 @@ public class InputManager : MonoBehaviour
         if (GameManager.InputLocked)
             return;
 
-        Ray ray = mainCam.ScreenPointToRay(screenPosition);
-        RaycastHit2D hit = Physics2D.Raycast(ray.origin, ray.direction);
-        if (hit.collider == null) return;
-
-        Cell cell = hit.collider.GetComponent<Cell>();
+        Cell cell = GetCellAtScreenPosition(screenPosition);
         if (cell == null) return;
 
         // Ignore cells that already have a puppy or are locked by a red cross.
@@ -252,8 +286,12 @@ public class InputManager : MonoBehaviour
 
         if (pendingTaps.Remove(cell))
         {
-            cell.ToggleXMark();
-            Debug.Log($"Single tap on {cell.gridPosition} -> X toggled.");
+            // The cell may have been destroyed by an in-scene grid rebuild during the wait.
+            if (cell != null)
+            {
+                cell.ToggleXMark();
+                Debug.Log($"Single tap on {cell.gridPosition} -> X toggled.");
+            }
         }
     }
 }

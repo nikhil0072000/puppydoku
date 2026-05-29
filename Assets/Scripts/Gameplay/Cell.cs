@@ -482,12 +482,11 @@ public class Cell : MonoBehaviour
     {
         if (theme == null) return;
 
-        if (zoneOverlay != null)
-        {
-            if (theme.cellZoneOverlaySprite != null)
-                zoneOverlay.sprite = theme.cellZoneOverlaySprite;
+        if (zoneOverlay != null && theme.cellZoneOverlaySprite != null)
+            zoneOverlay.sprite = theme.cellZoneOverlaySprite;
+
+        if (whiteOverlay != null)
             whiteOverlay.color = theme.whiteOverlayColor;
-        }
 
         if (backgroundSprite != null && theme.cellBackgroundSprite != null)
             backgroundSprite.sprite = theme.cellBackgroundSprite;

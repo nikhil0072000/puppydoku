@@ -62,11 +62,22 @@ namespace PuppyPuzzle.PowerUps
         private HintMode _mode;
         private Vector2Int _deductionTarget; // cell to place a puppy on when Apply is pressed in deduction mode
 
+        // The currently-running staggered preview/apply coroutine, tracked so it can be
+        // stopped on teardown (otherwise it keeps touching cells after the hint closes).
+        private Coroutine _routine;
+
         private void Awake()
         {
             if (applyButton != null) applyButton.onClick.AddListener(ApplyHint);
             if (cancelButton != null) cancelButton.onClick.AddListener(CancelHint);
             if (hintOverlay != null) hintOverlay.SetActive(false);
+        }
+
+        private void OnDisable()
+        {
+            // If the object is disabled or its scene unloads while a hint is open, tear the
+            // hint down so GameManager.InputLocked never leaks into the next level.
+            if (_isActive) ExitHint();
         }
 
         private void OnDestroy()
@@ -169,17 +180,22 @@ namespace PuppyPuzzle.PowerUps
             OpenOverlay(showApply: true);
             SetButtons(apply: true, cancel: true);
 
-            StartCoroutine(StaggeredPreview());
+            _routine = StartCoroutine(StaggeredPreview());
         }
 
         private IEnumerator StaggeredPreview()
         {
             var wait = new WaitForSeconds(stagger);
-            foreach (Cell cell in _previewCells)
+            // Iterate a snapshot: ExitHint (via Cancel) can clear _previewCells mid-stagger,
+            // which would otherwise throw "Collection was modified" on the next resume.
+            Cell[] cells = _previewCells.ToArray();
+            foreach (Cell cell in cells)
             {
+                if (cell == null) continue;
                 cell.ShowXPreview();
                 if (stagger > 0f) yield return wait;
             }
+            _routine = null;
         }
 
         private void BeginInvalidation(GameManager gm, List<Cell> invalidCells, HashSet<Vector2Int> invalidSet, int w, int h)
@@ -197,7 +213,7 @@ namespace PuppyPuzzle.PowerUps
             OpenOverlay(showApply: true);
             SetButtons(apply: true, cancel: true);
 
-            StartCoroutine(StaggeredPreview());
+            _routine = StartCoroutine(StaggeredPreview());
         }
 
         // ---- Deduction step ----
@@ -236,15 +252,17 @@ namespace PuppyPuzzle.PowerUps
                 return;
             }
 
-            StartCoroutine(ApplyRoutine());
+            _routine = StartCoroutine(ApplyRoutine());
         }
 
         private IEnumerator ApplyRoutine()
         {
             SetButtons(apply: false, cancel: false);
             var wait = new WaitForSeconds(stagger);
-            foreach (Cell cell in _previewCells)
+            Cell[] cells = _previewCells.ToArray();
+            foreach (Cell cell in cells)
             {
+                if (cell == null) continue;
                 cell.CommitXPreview();
                 if (stagger > 0f) yield return wait;
             }
@@ -291,6 +309,12 @@ namespace PuppyPuzzle.PowerUps
 
         private void ExitHint()
         {
+            if (_routine != null)
+            {
+                StopCoroutine(_routine);
+                _routine = null;
+            }
+
             foreach (Cell cell in _dimmedCells)
                 if (cell != null) cell.SetDimmed(false);
             _dimmedCells.Clear();

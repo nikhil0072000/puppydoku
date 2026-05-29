@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.Networking;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using TMPro;
@@ -12,7 +13,12 @@ using Newtonsoft.Json;
 public class LevelLoader : MonoBehaviour
 {
     private const string TutorialCompleteKey = "TutorialCompleted";
-    private const string SavedLevelPositionKey = "SavedLevelPosition";
+    // Stores the FileKey of the player's current Normal level (stable across content
+    // updates that add/remove/reorder level files — unlike a raw list index).
+    private const string SavedLevelKey = "SavedLevelKey";
+    // Shipped alongside the level JSONs so the runtime can enumerate them on platforms
+    // (Android, WebGL) where StreamingAssets isn't a readable filesystem directory.
+    private const string ManifestFileName = "levels_manifest.json";
 
     public static LevelLoader Instance { get; private set; }
 
@@ -64,7 +70,12 @@ public class LevelLoader : MonoBehaviour
             return;
         }
 
-        ScanAvailableLevels();
+        StartCoroutine(InitializeRoutine());
+    }
+
+    private IEnumerator InitializeRoutine()
+    {
+        yield return StartCoroutine(ScanAvailableLevelsRoutine());
 
         if (availableLevels.Count == 0)
         {
@@ -80,56 +91,177 @@ public class LevelLoader : MonoBehaviour
 
         if (!IsTutorialComplete && TryGetTutorialLevel(out LevelInfo tutorialLevel))
         {
-            StartCoroutine(LoadLevelRoutine(tutorialLevel, gameSceneName));
-            return;
+            yield return StartCoroutine(LoadLevelRoutine(tutorialLevel, gameSceneName));
+            yield break;
         }
 
         SetSavedLevelPosition();
-        StartCoroutine(LoadLevelRoutine(availableLevels[currentListPosition], homeSceneName));
+        yield return StartCoroutine(LoadLevelRoutine(availableLevels[currentListPosition], homeSceneName));
     }
 
-    private void ScanAvailableLevels()
+    private IEnumerator ScanAvailableLevelsRoutine()
     {
         availableLevels.Clear();
 
         string folder = Path.Combine(Application.streamingAssetsPath, levelsFolder);
-        if (!Directory.Exists(folder))
-        {
-            Debug.LogWarning($"Levels folder not found: {folder}");
-            return;
-        }
 
-        // Level type is derived from the filename prefix: Level_* (Normal), Daily_* (DailyChallenge), Tutorial_* (Tutorial).
-        string[] files = Directory.GetFiles(folder, "*.json");
-        foreach (string filePath in files)
+        // On desktop/iOS/Editor, StreamingAssets is a real directory we can enumerate.
+        // On Android/WebGL it's packed inside the build, so we fall back to a shipped manifest.
+        if (Directory.Exists(folder))
         {
-            string name = Path.GetFileNameWithoutExtension(filePath);
-            if (!LevelDataModel.TryParseFileName(name, out LevelType type, out string keyPart))
-                continue;
-
-            availableLevels.Add(new LevelInfo
+            string[] files = Directory.GetFiles(folder, "*.json");
+            foreach (string filePath in files)
             {
-                FileName = name,
-                FilePath = filePath,
-                FileKey = keyPart,
-                Type = type
-            });
+                string name = Path.GetFileNameWithoutExtension(filePath);
+                if (name == Path.GetFileNameWithoutExtension(ManifestFileName))
+                    continue;
+                AddLevelFromName(name, filePath);
+            }
+
+#if UNITY_EDITOR
+            WriteManifest(folder);
+#endif
+        }
+        else
+        {
+            string manifestPath = Path.Combine(folder, ManifestFileName);
+            string manifestJson = null;
+            yield return StartCoroutine(ReadTextRoutine(manifestPath, text => manifestJson = text));
+
+            if (string.IsNullOrEmpty(manifestJson))
+            {
+                Debug.LogWarning($"Levels manifest not found or unreadable at: {manifestPath}");
+            }
+            else
+            {
+                string[] names = null;
+                try
+                {
+                    names = JsonConvert.DeserializeObject<string[]>(manifestJson);
+                }
+                catch (Exception e)
+                {
+                    Debug.LogError($"Failed to parse levels manifest: {e.Message}");
+                }
+
+                if (names != null)
+                {
+                    foreach (string name in names)
+                    {
+                        if (string.IsNullOrWhiteSpace(name))
+                            continue;
+                        string filePath = Path.Combine(folder, name + ".json");
+                        AddLevelFromName(name, filePath);
+                    }
+                }
+            }
         }
 
         availableLevels.Sort(CompareLevels);
         Debug.Log($"Found {availableLevels.Count} level(s): {string.Join(", ", availableLevels.Select(level => level.GetButtonLabel()))}");
+    }
 
+    private void AddLevelFromName(string name, string filePath)
+    {
+        // Level type is derived from the filename prefix: Level_* (Normal), Daily_* (DailyChallenge), Tutorial_* (Tutorial).
+        if (!LevelDataModel.TryParseFileName(name, out LevelType type, out string keyPart))
+            return;
+
+        availableLevels.Add(new LevelInfo
+        {
+            FileName = name,
+            FilePath = filePath,
+            FileKey = keyPart,
+            Type = type
+        });
+    }
+
+#if UNITY_EDITOR
+    private void WriteManifest(string folder)
+    {
+        try
+        {
+            string[] names = availableLevels.Select(level => level.FileName).ToArray();
+            string json = JsonConvert.SerializeObject(names, Formatting.Indented);
+            File.WriteAllText(Path.Combine(folder, ManifestFileName), json);
+        }
+        catch (Exception e)
+        {
+            Debug.LogWarning($"Could not write levels manifest: {e.Message}");
+        }
+    }
+#endif
+
+    /// <summary>
+    /// Reads a text file from a path that may be a plain filesystem path (desktop/iOS/Editor)
+    /// or a packed StreamingAssets URL (Android/WebGL). Calls back with null on any failure.
+    /// </summary>
+    private IEnumerator ReadTextRoutine(string path, Action<string> onResult)
+    {
+        if (string.IsNullOrEmpty(path))
+        {
+            onResult(null);
+            yield break;
+        }
+
+        // A URL-style path (jar:file://… on Android, http(s):// on WebGL) must go through UnityWebRequest.
+        bool isUrl = path.Contains("://");
+        if (!isUrl)
+        {
+            string text = null;
+            try
+            {
+                if (File.Exists(path))
+                    text = File.ReadAllText(path);
+            }
+            catch (Exception e)
+            {
+                Debug.LogError($"Failed to read level file '{path}': {e.Message}");
+            }
+            onResult(text);
+            yield break;
+        }
+
+        using UnityWebRequest request = UnityWebRequest.Get(path);
+        yield return request.SendWebRequest();
+
+        if (request.result == UnityWebRequest.Result.Success)
+            onResult(request.downloadHandler.text);
+        else
+        {
+            Debug.LogError($"Failed to fetch level file '{path}': {request.error}");
+            onResult(null);
+        }
     }
 
     private static int CompareLevels(LevelInfo a, LevelInfo b)
     {
-        if (a.Type != b.Type)
-            return a.Type == LevelType.Tutorial ? -1 : b.Type == LevelType.Tutorial ? 1 : 0;
+        // Order by a stable type rank first, then by numeric key, then by name. This keeps the
+        // comparator a strict weak ordering (returning 0 only for genuinely equal entries).
+        int rankCompare = TypeRank(a.Type).CompareTo(TypeRank(b.Type));
+        if (rankCompare != 0)
+            return rankCompare;
 
         if (int.TryParse(a.FileKey, out int aKey) && int.TryParse(b.FileKey, out int bKey))
-            return aKey.CompareTo(bKey);
+        {
+            int keyCompare = aKey.CompareTo(bKey);
+            if (keyCompare != 0)
+                return keyCompare;
+        }
 
-        return string.Compare(a.FileName, b.FileName, System.StringComparison.OrdinalIgnoreCase);
+        return string.Compare(a.FileName, b.FileName, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static int TypeRank(LevelType type)
+    {
+        switch (type)
+        {
+            case LevelType.Tutorial: return 0;
+            case LevelType.Normal: return 1;
+            case LevelType.DailyChallenge: return 2;
+            case LevelType.Event: return 3;
+            default: return 4;
+        }
     }
 
     private IEnumerator LoadLevelRoutine(LevelInfo levelInfo, string targetScene)
@@ -154,27 +286,37 @@ public class LevelLoader : MonoBehaviour
             yield return null;
         }
 
-        if (string.IsNullOrEmpty(levelInfo.FilePath) || !File.Exists(levelInfo.FilePath))
+        bool loaded = false;
+        if (!string.IsNullOrEmpty(levelInfo.FilePath))
         {
-            Debug.LogError($"Level file not found: {levelInfo.FilePath}. Creating fallback.");
+            string json = null;
+            yield return StartCoroutine(ReadTextRoutine(levelInfo.FilePath, text => json = text));
+
+            if (!string.IsNullOrEmpty(json))
+            {
+                try
+                {
+                    CurrentLevelData = JsonConvert.DeserializeObject<LevelDataModel>(json);
+                }
+                catch (Exception e)
+                {
+                    Debug.LogError($"Failed to parse level '{levelInfo.FileName}': {e.Message}. Using fallback.");
+                    CurrentLevelData = null;
+                }
+
+                if (CurrentLevelData != null)
+                {
+                    CurrentDifficulty = ParseDifficulty(CurrentLevelData.difficulty);
+                    loaded = true;
+                }
+            }
+        }
+
+        if (!loaded)
+        {
+            Debug.LogError($"Level '{levelInfo.FileName}' could not be loaded ({levelInfo.FilePath}). Using fallback.");
             CurrentLevelData = CreateFallbackLevel(4);
             CurrentDifficulty = Difficulty.Easy;
-        }
-        else
-        {
-            string json = File.ReadAllText(levelInfo.FilePath);
-            CurrentLevelData = JsonConvert.DeserializeObject<LevelDataModel>(json);
-
-            if (CurrentLevelData == null)
-            {
-                Debug.LogError("Deserialization returned null, using fallback.");
-                CurrentLevelData = CreateFallbackLevel(4);
-                CurrentDifficulty = Difficulty.Easy;
-            }
-            else
-            {
-                CurrentDifficulty = ParseDifficulty(CurrentLevelData.difficulty);
-            }
         }
 
         if (levelInfo.Type == LevelType.Normal && !IsDailySession)
@@ -335,18 +477,18 @@ public class LevelLoader : MonoBehaviour
 
     private void SetSavedLevelPosition()
     {
-        int savedPosition = PlayerPrefs.GetInt(SavedLevelPositionKey, 0);
-        if (savedPosition < 0 || savedPosition >= availableLevels.Count)
-            savedPosition = 0;
+        // Progress is keyed by the level's stable FileKey, not its position in the scanned
+        // list, so adding/removing/reordering level files won't shift a returning player.
+        string savedKey = PlayerPrefs.GetString(SavedLevelKey, string.Empty);
 
-        // The home progression only tracks Normal levels — never snap to a Tutorial/Daily/Event entry.
-        if (savedPosition < 0 || savedPosition >= availableLevels.Count || availableLevels[savedPosition].Type != LevelType.Normal)
-        {
-            int normalIndex = availableLevels.FindIndex(level => level.Type == LevelType.Normal);
-            savedPosition = normalIndex >= 0 ? normalIndex : Mathf.Clamp(savedPosition, 0, availableLevels.Count - 1);
-        }
+        int index = -1;
+        if (!string.IsNullOrEmpty(savedKey))
+            index = availableLevels.FindIndex(level => level.Type == LevelType.Normal && level.FileKey == savedKey);
 
-        currentListPosition = savedPosition;
+        if (index < 0)
+            index = availableLevels.FindIndex(level => level.Type == LevelType.Normal);
+
+        currentListPosition = index >= 0 ? index : 0;
     }
 
     private void EndDailySession()
@@ -360,8 +502,17 @@ public class LevelLoader : MonoBehaviour
 
     private void SaveCurrentLevelPosition()
     {
-        PlayerPrefs.SetInt(SavedLevelPositionKey, currentListPosition);
-        PlayerPrefs.Save();
+        if (currentLevelInfo != null && currentLevelInfo.Type == LevelType.Normal)
+        {
+            PlayerPrefs.SetString(SavedLevelKey, currentLevelInfo.FileKey);
+            PlayerPrefs.Save();
+        }
+        else if (currentListPosition >= 0 && currentListPosition < availableLevels.Count
+                 && availableLevels[currentListPosition].Type == LevelType.Normal)
+        {
+            PlayerPrefs.SetString(SavedLevelKey, availableLevels[currentListPosition].FileKey);
+            PlayerPrefs.Save();
+        }
     }
 
     private bool TryGetTutorialLevel(out LevelInfo tutorialLevel)

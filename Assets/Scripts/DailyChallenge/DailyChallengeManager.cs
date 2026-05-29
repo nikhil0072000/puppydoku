@@ -39,20 +39,33 @@ public class DailyChallengeManager : MonoBehaviour
         }
     }
 
-    private int lastSavedElapsedSeconds;
-
     void Update()
     {
         if (!timerRunning)
             return;
 
+        // Accumulate in memory only. Persisting every second would flush PlayerPrefs to disk
+        // (a synchronous, main-thread I/O) once per second — we save on pause/focus-loss/quit
+        // and on completion instead (see OnApplicationPause/OnApplicationFocus/OnDestroy).
         ElapsedSeconds += Time.unscaledDeltaTime;
-        int currentSeconds = Mathf.FloorToInt(ElapsedSeconds);
-        if (currentSeconds != lastSavedElapsedSeconds)
-        {
-            lastSavedElapsedSeconds = currentSeconds;
+    }
+
+    private void OnApplicationPause(bool paused)
+    {
+        if (paused && timerRunning)
             SaveDailyState();
-        }
+    }
+
+    private void OnApplicationFocus(bool hasFocus)
+    {
+        if (!hasFocus && timerRunning)
+            SaveDailyState();
+    }
+
+    private void OnDestroy()
+    {
+        if (timerRunning)
+            SaveDailyState();
     }
 
     private void LoadDailyState()
@@ -93,7 +106,6 @@ public class DailyChallengeManager : MonoBehaviour
         CompletedPercentile = 0;
         selectedLevelKey = string.Empty;
         ElapsedSeconds = 0f;
-        lastSavedElapsedSeconds = 0;
         timerRunning = false;
         SaveDailyState();
     }
@@ -163,7 +175,9 @@ public class DailyChallengeManager : MonoBehaviour
     public string GetDailyPercentText()
     {
         // Shown in a separate label once today's challenge is finished, e.g. "Top 18%".
-        return HasCompletedToday ? $"Top {CompletedPercentile}%" : string.Empty;
+        // CompletedPercentile is "faster than X% of players" (higher = better), so the
+        // rank shown is its complement: beating 82% of players => "Top 18%".
+        return HasCompletedToday ? $"Top {Mathf.Clamp(100 - CompletedPercentile, 1, 100)}%" : string.Empty;
     }
 
     public string GetDailySubtitleText()
