@@ -58,6 +58,12 @@ public class GameManager : MonoBehaviour
     // ---- Read-only state exposed to the power-up system ----
     public bool IsGameOver => gameOver;
     public bool CanRevive => !revivedThisLevel;
+
+    /// <summary>Current remaining lives. Read-only for UI (LifePanel/HUD).</summary>
+    public int CurrentLives => lives;
+
+    /// <summary>Maximum lives a level starts with.</summary>
+    public int MaxLifeCount => MaxLives;
     public GridManager Grid => gridManager;
     public int GridWidth => zoneMap != null ? zoneMap.GetLength(0) : 0;
     public int GridHeight => zoneMap != null ? zoneMap.GetLength(1) : 0;

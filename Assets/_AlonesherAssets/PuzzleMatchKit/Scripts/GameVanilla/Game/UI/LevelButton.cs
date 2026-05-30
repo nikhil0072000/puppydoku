@@ -2,6 +2,7 @@
 // This code can only be used under the standard Unity Asset Store End User License Agreement,
 // a copy of which is available at http://unity3d.com/company/legal/as_terms.
 
+using TMPro;
 using UnityEngine;
 using UnityEngine.Assertions;
 using UnityEngine.UI;
@@ -34,7 +35,7 @@ namespace GameVanilla.Game.UI
         private Image buttonImage;
 
         [SerializeField]
-        private Text numLevelText;
+        private TMP_Text numLevelText;
 
         [SerializeField]
         private GameObject star1;
