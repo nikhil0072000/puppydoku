@@ -1,0 +1,19 @@
+fileFormatVersion: 2
+guid: a63f0ba08de6dda43b87cb4e1f7fa422
+timeCreated: 1502896165
+licenseType: Store
+MonoImporter:
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 100199
+  packageName: Puzzle Match Kit
+  packageVersion: 3.2.0
+  assetPath: Assets/PuzzleMatchKit/Scripts/GameVanilla/Core/AnimatedButton.cs
+  uploadId: 918878

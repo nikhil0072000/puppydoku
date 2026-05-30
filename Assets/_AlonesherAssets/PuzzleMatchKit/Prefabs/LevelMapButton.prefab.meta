@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: 7def9b176a058437baf7e037179d4c56
+timeCreated: 1502536146
+licenseType: Store
+NativeFormatImporter:
+  mainObjectFileID: 100100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 100199
+  packageName: Puzzle Match Kit
+  packageVersion: 3.2.0
+  assetPath: Assets/PuzzleMatchKit/Prefabs/LevelMapButton.prefab
+  uploadId: 918878

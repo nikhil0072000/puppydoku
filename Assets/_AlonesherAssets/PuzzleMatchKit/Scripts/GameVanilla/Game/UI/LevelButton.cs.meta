@@ -1,0 +1,19 @@
+fileFormatVersion: 2
+guid: 825004a6ad4e0da4fae3600c29a448ec
+timeCreated: 1502906579
+licenseType: Store
+MonoImporter:
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 100199
+  packageName: Puzzle Match Kit
+  packageVersion: 3.2.0
+  assetPath: Assets/PuzzleMatchKit/Scripts/GameVanilla/Game/UI/LevelButton.cs
+  uploadId: 918878

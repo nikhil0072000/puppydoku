@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: 24e2ffe0c420645269b51e1daf0d82e7
+timeCreated: 1502531025
+licenseType: Store
+NativeFormatImporter:
+  mainObjectFileID: 7400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 100199
+  packageName: Puzzle Match Kit
+  packageVersion: 3.2.0
+  assetPath: Assets/PuzzleMatchKit/Animations/LevelScene/ActiveLevelShineIdle.anim
+  uploadId: 918878

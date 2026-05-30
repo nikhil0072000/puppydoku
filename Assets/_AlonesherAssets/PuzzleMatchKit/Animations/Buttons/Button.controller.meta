@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: 1f79986ab405d3c4898ae72108766f73
+timeCreated: 1503312380
+licenseType: Store
+NativeFormatImporter:
+  mainObjectFileID: 9100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 100199
+  packageName: Puzzle Match Kit
+  packageVersion: 3.2.0
+  assetPath: Assets/PuzzleMatchKit/Animations/Buttons/Button.controller
+  uploadId: 918878

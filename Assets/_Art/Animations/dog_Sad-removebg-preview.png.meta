@@ -1,0 +1,468 @@
+fileFormatVersion: 2
+guid: 6d82924ea55cccb4aafeda73e3a40969
+TextureImporter:
+  internalIDToNameTable:
+  - first:
+      213: -2634114128388461314
+    second: dog_Sad-removebg-preview_0
+  - first:
+      213: -3933413152940099373
+    second: dog_Sad-removebg-preview_1
+  - first:
+      213: -5281506221343218558
+    second: dog_Sad-removebg-preview_2
+  - first:
+      213: 6987027237296990982
+    second: dog_Sad-removebg-preview_3
+  - first:
+      213: 4819669581103007841
+    second: dog_Sad-removebg-preview_4
+  - first:
+      213: 3530719770450560585
+    second: dog_Sad-removebg-preview_5
+  - first:
+      213: -4492974454737653723
+    second: dog_Sad-removebg-preview_6
+  - first:
+      213: 969315286524471228
+    second: dog_Sad-removebg-preview_7
+  - first:
+      213: -929711761314678426
+    second: dog_Sad-removebg-preview_8
+  - first:
+      213: -7356994068528582131
+    second: dog_Sad-removebg-preview_9
+  - first:
+      213: 7160896079065039669
+    second: dog_Sad-removebg-preview_10
+  - first:
+      213: -498391852947028730
+    second: dog_Sad-removebg-preview_11
+  externalObjects: {}
+  serializedVersion: 13
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+    flipGreenChannel: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMipmapLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 1
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 1
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 2
+  spriteExtrude: 1
+  spriteMeshType: 1
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
+  spritePixelsToUnits: 100
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationDetail: -1
+  textureType: 8
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 0
+  platformSettings:
+  - serializedVersion: 4
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Standalone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Android
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: WebGL
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: iOS
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: dog_Sad-removebg-preview_0
+      rect:
+        serializedVersion: 2
+        x: 7
+        y: 246
+        width: 103
+        height: 71
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: efc6197082fb17bd0800000000000000
+      internalID: -2634114128388461314
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: dog_Sad-removebg-preview_1
+      rect:
+        serializedVersion: 2
+        x: 114
+        y: 245
+        width: 101
+        height: 71
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 3d8f728d395b969c0800000000000000
+      internalID: -3933413152940099373
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: dog_Sad-removebg-preview_2
+      rect:
+        serializedVersion: 2
+        x: 218
+        y: 245
+        width: 100
+        height: 71
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 28462d5031254b6b0800000000000000
+      internalID: -5281506221343218558
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: dog_Sad-removebg-preview_3
+      rect:
+        serializedVersion: 2
+        x: 320
+        y: 243
+        width: 92
+        height: 72
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 60be013e048e6f060800000000000000
+      internalID: 6987027237296990982
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: dog_Sad-removebg-preview_4
+      rect:
+        serializedVersion: 2
+        x: 414
+        y: 244
+        width: 96
+        height: 71
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 1688664c2f7e2e240800000000000000
+      internalID: 4819669581103007841
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: dog_Sad-removebg-preview_5
+      rect:
+        serializedVersion: 2
+        x: 511
+        y: 244
+        width: 98
+        height: 70
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 9468727bce2aff030800000000000000
+      internalID: 3530719770450560585
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: dog_Sad-removebg-preview_6
+      rect:
+        serializedVersion: 2
+        x: 8
+        y: 107
+        width: 103
+        height: 69
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 5203578c98fb5a1c0800000000000000
+      internalID: -4492974454737653723
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: dog_Sad-removebg-preview_7
+      rect:
+        serializedVersion: 2
+        x: 112
+        y: 107
+        width: 101
+        height: 67
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: cb7a5a01e13b37d00800000000000000
+      internalID: 969315286524471228
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: dog_Sad-removebg-preview_8
+      rect:
+        serializedVersion: 2
+        x: 213
+        y: 106
+        width: 97
+        height: 68
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 669f55334100913f0800000000000000
+      internalID: -929711761314678426
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: dog_Sad-removebg-preview_9
+      rect:
+        serializedVersion: 2
+        x: 308
+        y: 106
+        width: 100
+        height: 68
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: d02b2baafd4b6e990800000000000000
+      internalID: -7356994068528582131
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: dog_Sad-removebg-preview_10
+      rect:
+        serializedVersion: 2
+        x: 409
+        y: 106
+        width: 98
+        height: 69
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 533c82a3b0d906360800000000000000
+      internalID: 7160896079065039669
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: dog_Sad-removebg-preview_11
+      rect:
+        serializedVersion: 2
+        x: 509
+        y: 106
+        width: 101
+        height: 68
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 605c426104b5519f0800000000000000
+      internalID: -498391852947028730
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    outline: []
+    customData: 
+    physicsShape: []
+    bones: []
+    spriteID: 
+    internalID: 0
+    vertices: []
+    indices: 
+    edges: []
+    weights: []
+    secondaryTextures: []
+    spriteCustomMetadata:
+      entries: []
+    nameFileIdTable:
+      dog_Sad-removebg-preview_0: -2634114128388461314
+      dog_Sad-removebg-preview_1: -3933413152940099373
+      dog_Sad-removebg-preview_10: 7160896079065039669
+      dog_Sad-removebg-preview_11: -498391852947028730
+      dog_Sad-removebg-preview_2: -5281506221343218558
+      dog_Sad-removebg-preview_3: 6987027237296990982
+      dog_Sad-removebg-preview_4: 4819669581103007841
+      dog_Sad-removebg-preview_5: 3530719770450560585
+      dog_Sad-removebg-preview_6: -4492974454737653723
+      dog_Sad-removebg-preview_7: 969315286524471228
+      dog_Sad-removebg-preview_8: -929711761314678426
+      dog_Sad-removebg-preview_9: -7356994068528582131
+  mipmapLimitGroupName: 
+  pSDRemoveMatte: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

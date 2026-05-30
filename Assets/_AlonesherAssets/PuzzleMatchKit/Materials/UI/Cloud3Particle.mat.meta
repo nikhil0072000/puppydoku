@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: 74d57877e2b484472ab121ff6f9ef483
+timeCreated: 1502366506
+licenseType: Store
+NativeFormatImporter:
+  mainObjectFileID: 2100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 100199
+  packageName: Puzzle Match Kit
+  packageVersion: 3.2.0
+  assetPath: Assets/PuzzleMatchKit/Materials/UI/Cloud3Particle.mat
+  uploadId: 918878

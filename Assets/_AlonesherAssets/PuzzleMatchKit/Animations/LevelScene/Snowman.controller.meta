@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: 3b36487fb9b214fd7b928e5f3c060a81
+timeCreated: 1502648973
+licenseType: Store
+NativeFormatImporter:
+  mainObjectFileID: 9100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 100199
+  packageName: Puzzle Match Kit
+  packageVersion: 3.2.0
+  assetPath: Assets/PuzzleMatchKit/Animations/LevelScene/Snowman.controller
+  uploadId: 918878

@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: b572d7fa24419415ebaa926655369f3f
+timeCreated: 1502625856
+licenseType: Store
+NativeFormatImporter:
+  mainObjectFileID: 9100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 100199
+  packageName: Puzzle Match Kit
+  packageVersion: 3.2.0
+  assetPath: Assets/PuzzleMatchKit/Animations/LevelScene/Birds/WingLeft.controller
+  uploadId: 918878

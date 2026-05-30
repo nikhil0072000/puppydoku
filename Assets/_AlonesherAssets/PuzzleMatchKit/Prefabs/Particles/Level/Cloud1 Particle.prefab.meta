@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: 612ff60897a994499a2aea020bb2c465
+PrefabImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 100199
+  packageName: Puzzle Match Kit
+  packageVersion: 3.2.0
+  assetPath: Assets/PuzzleMatchKit/Prefabs/Particles/Level/Cloud1 Particle.prefab
+  uploadId: 918878

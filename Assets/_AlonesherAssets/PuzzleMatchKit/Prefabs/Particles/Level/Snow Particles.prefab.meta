@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: 12b5e61827f3146c3b7bbc4803a98f68
+PrefabImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 100199
+  packageName: Puzzle Match Kit
+  packageVersion: 3.2.0
+  assetPath: Assets/PuzzleMatchKit/Prefabs/Particles/Level/Snow Particles.prefab
+  uploadId: 918878

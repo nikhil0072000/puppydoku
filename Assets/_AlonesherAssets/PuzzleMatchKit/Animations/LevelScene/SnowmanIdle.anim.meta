@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: b601bde4b931741bea5cd6618886bc06
+timeCreated: 1502648978
+licenseType: Store
+NativeFormatImporter:
+  mainObjectFileID: 7400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 100199
+  packageName: Puzzle Match Kit
+  packageVersion: 3.2.0
+  assetPath: Assets/PuzzleMatchKit/Animations/LevelScene/SnowmanIdle.anim
+  uploadId: 918878
