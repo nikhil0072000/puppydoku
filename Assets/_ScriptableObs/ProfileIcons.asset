@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d848ce05bf0e6ab4080df20c7c6e9edd, type: 3}
+  m_Name: ProfileIcons
+  m_EditorClassIdentifier: Assembly-CSharp::ProfileIconsSO
+  defaultIcon: {fileID: 21300000, guid: d83fb5970e51643f29d1d9c74adfe3b0, type: 3}
+  icons:
+  - {fileID: 21300000, guid: f5dbac3e51bbe48e8be5183a8cbdf3db, type: 3}
+  - {fileID: 21300000, guid: 826d8885b53084d02a83fc8c774e7960, type: 3}
+  - {fileID: 21300000, guid: 85a77797c1dcb48baa6055429cbed143, type: 3}
+  - {fileID: 21300000, guid: 7e8e8263155194c78aae5fa6e10e4515, type: 3}
+  - {fileID: 21300000, guid: 6b94b779cee9a497ca4671cf10f26287, type: 3}
+  - {fileID: 21300000, guid: d5df6220fe7c54850ada130966897277, type: 3}

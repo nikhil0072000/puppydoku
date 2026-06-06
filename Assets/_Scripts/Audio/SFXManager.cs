@@ -41,6 +41,7 @@ public class SFXManager : MonoBehaviour
             Debug.LogError("SFXManager: SFX pool is empty. Assign AudioSources in the Inspector.");
 
         ApplyBGMVolumes();
+        SettingsStore.ApplyAudioSettings(); // restore persisted music/sound mute state
     }
 
     void OnValidate()
@@ -130,5 +131,25 @@ public class SFXManager : MonoBehaviour
     {
         bgmMasterVolume = Mathf.Clamp01(masterVolume);
         ApplyBGMVolumes();
+    }
+
+    // ---------- Settings mute (driven by SettingsStore) ----------
+
+    /// <summary>Mutes/unmutes the BGM sources without touching their tuned volumes.</summary>
+    public void SetMusicMuted(bool muted)
+    {
+        if (bgm1 != null) bgm1.mute = muted;
+        if (bgm2 != null) bgm2.mute = muted;
+    }
+
+    /// <summary>Mutes/unmutes the whole SFX pool without touching per-clip volumes.</summary>
+    public void SetSfxMuted(bool muted)
+    {
+        if (sfxSources == null) return;
+        foreach (AudioSource src in sfxSources)
+        {
+            if (src != null)
+                src.mute = muted;
+        }
     }
 }

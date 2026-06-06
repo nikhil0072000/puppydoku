@@ -2390,7 +2390,7 @@ MonoBehaviour:
   progressSlider: {fileID: 6834874487943432834}
   progressText: {fileID: 6112281348477045539}
   versionText: {fileID: 8342805004256792204}
-  levelsFolder: Levels
+  levelConfig: {fileID: 11400000, guid: fce3d508172fd4a4694ed9681999fdd2, type: 2}
 --- !u!1 &1893603899
 GameObject:
   m_ObjectHideFlags: 0

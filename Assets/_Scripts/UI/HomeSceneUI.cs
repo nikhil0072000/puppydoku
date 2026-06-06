@@ -29,6 +29,18 @@ public class HomeSceneUI : MonoBehaviour
     [Tooltip("RectTransform on the Play button — used for the scale-in pop.")]
     [SerializeField] private RectTransform playButtonRect;
 
+    [Header("Currency Bar")]
+    [Tooltip("The '+' next to the coin balance — navigates to the Shop tab.")]
+    [SerializeField] private Button coinsPlusBtn;
+    [Tooltip("The '+' next to the pawgem balance — navigates to the Shop tab.")]
+    [SerializeField] private Button gemsPlusBtn;
+    [Tooltip("Defaults to the NavigationManager on this GameObject if unset.")]
+    [SerializeField] private NavigationManager navigationManager;
+
+    [Header("Settings")]
+    [Tooltip("Opens the Settings popup.")]
+    [SerializeField] private Button settingsBtn;
+
     [Header("Level Map")]
     [SerializeField] private ScrollRect scrollRect;
     [Tooltip("The ScrollRect's Content holding all the LevelMapButton instances.")]
@@ -57,6 +69,8 @@ public class HomeSceneUI : MonoBehaviour
     {
         if (content != null)
             _levelButtons = content.GetComponentsInChildren<LevelButton>(true);
+        if (navigationManager == null)
+            navigationManager = GetComponent<NavigationManager>();
     }
 
     private void OnEnable()
@@ -65,6 +79,12 @@ public class HomeSceneUI : MonoBehaviour
             playButton.onClick.AddListener(OnPlayClicked);
         if (scrollRect != null)
             scrollRect.onValueChanged.AddListener(OnScrollChanged);
+        if (coinsPlusBtn != null)
+            coinsPlusBtn.onClick.AddListener(OnOpenShopClicked);
+        if (gemsPlusBtn != null)
+            gemsPlusBtn.onClick.AddListener(OnOpenShopClicked);
+        if (settingsBtn != null)
+            settingsBtn.onClick.AddListener(OnSettingsClicked);
 
         RefreshLevelLabel();
         HidePlayInstant();
@@ -76,6 +96,36 @@ public class HomeSceneUI : MonoBehaviour
             playButton.onClick.RemoveListener(OnPlayClicked);
         if (scrollRect != null)
             scrollRect.onValueChanged.RemoveListener(OnScrollChanged);
+        if (coinsPlusBtn != null)
+            coinsPlusBtn.onClick.RemoveListener(OnOpenShopClicked);
+        if (gemsPlusBtn != null)
+            gemsPlusBtn.onClick.RemoveListener(OnOpenShopClicked);
+        if (settingsBtn != null)
+            settingsBtn.onClick.RemoveListener(OnSettingsClicked);
+    }
+
+    /// <summary>Opens the Settings popup.</summary>
+    private void OnSettingsClicked()
+    {
+        if (SFXManager.Instance != null)
+            SFXManager.Instance.Play(SFXType.ButtonClick);
+
+        if (PopupCanvasManager.Instance != null)
+            PopupCanvasManager.Instance.Show(PopupType.Settings);
+        else
+            Debug.LogError("PopupCanvasManager instance not found!", this);
+    }
+
+    /// <summary>Both currency '+' buttons route here — navigate to the Shop tab.</summary>
+    private void OnOpenShopClicked()
+    {
+        if (SFXManager.Instance != null)
+            SFXManager.Instance.Play(SFXType.ButtonClick);
+
+        if (navigationManager != null)
+            navigationManager.SetPanel(NavigationManager.PanelState.Shop);
+        else
+            Debug.LogError("NavigationManager not found!", this);
     }
 
     private IEnumerator Start()

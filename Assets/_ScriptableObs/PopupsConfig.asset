@@ -12,4 +12,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5034111ea72a7d34a90d735b11288dd8, type: 3}
   m_Name: PopupsConfig
   m_EditorClassIdentifier: Assembly-CSharp::PopupsConfig
-  entries: []
+  entries:
+  - type: 6
+    prefab: {fileID: 7072064973978106540, guid: 78b61f3fc97b49e41a907d5d36e127de, type: 3}

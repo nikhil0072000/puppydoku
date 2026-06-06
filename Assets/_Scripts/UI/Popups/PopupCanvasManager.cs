@@ -27,6 +27,9 @@ public class PopupCanvasManager : MonoBehaviour
     [Tooltip("Parent for instantiated popups. Defaults to this transform (the canvas).")]
     [SerializeField] private Transform popupParent;
 
+    [Tooltip("Selectable profile icons. Read by ProfilePopup and UserProfile.")]
+    [SerializeField] private ProfileIconsSO profileIcons;
+
     private readonly Dictionary<PopupType, Popup> _cache = new Dictionary<PopupType, Popup>();
     private readonly List<PopupType> _queue = new List<PopupType>();
 
@@ -38,6 +41,9 @@ public class PopupCanvasManager : MonoBehaviour
 
     /// <summary>The popup currently shown, or null if none.</summary>
     public PopupType? CurrentPopup => _current;
+
+    /// <summary>Profile icon set shared by ProfilePopup and UserProfile widgets.</summary>
+    public ProfileIconsSO ProfileIcons => profileIcons;
 
     private void Awake()
     {

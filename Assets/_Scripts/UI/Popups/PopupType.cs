@@ -10,5 +10,6 @@ public enum PopupType
     Defeat,
     LifePanel,
     UserProfilePanel,
-    ShopPanel
+    ShopPanel,
+    ProfilePopup
 }

@@ -1,15 +1,16 @@
 using System;
 using UnityEngine;
+using PuppyPuzzle.Economy;
 
 namespace PuppyPuzzle.PowerUps
 {
     /// <summary>
-    /// Tracks how many chances remain for each power-up and persists them across
-    /// sessions via PlayerPrefs. Singleton that survives scene loads, so it should
-    /// live in the first-loaded (bootstrap/Loading) scene.
-    ///
-    /// Chances default to <see cref="DefaultChances"/> the first time the game runs.
-    /// Consuming decrements; watching the rewarded ad grants one back.
+    /// Thin scene-facing facade over <see cref="EconomyHandler"/>, which now owns
+    /// all booster-count storage (same PlayerPrefs keys, so old saves carry over).
+    /// Kept so existing consumers (PowerUpButton, HintController, ShopPanel) and
+    /// scene setups keep working, and so the fresh-save default stays designer
+    /// tweakable in the inspector. Singleton that survives scene loads; lives in
+    /// the first-loaded (bootstrap/Loading) scene.
     /// </summary>
     public class PowerUpManager : MonoBehaviour
     {
@@ -24,8 +25,6 @@ namespace PuppyPuzzle.PowerUps
 
         public int DefaultChances => defaultChances;
 
-        private const string KeyPrefix = "powerup_chances_";
-
         private void Awake()
         {
             if (Instance != null && Instance != this)
@@ -35,48 +34,31 @@ namespace PuppyPuzzle.PowerUps
             }
             Instance = this;
             DontDestroyOnLoad(gameObject);
+
+            EconomyHandler.DefaultBoosterCount = defaultChances;
+            EconomyHandler.OnBoosterChanged += HandleBoosterChanged;
+        }
+
+        private void OnDestroy()
+        {
+            if (Instance == this)
+                EconomyHandler.OnBoosterChanged -= HandleBoosterChanged;
         }
 
         /// <summary>Remaining chances for a power-up (initialised to default on first read).</summary>
-        public int GetChances(PowerUpType type)
-        {
-            string key = KeyFor(type);
-            if (!PlayerPrefs.HasKey(key))
-            {
-                PlayerPrefs.SetInt(key, defaultChances);
-                PlayerPrefs.Save();
-            }
-            return PlayerPrefs.GetInt(key, defaultChances);
-        }
+        public int GetChances(PowerUpType type) => EconomyHandler.GetBoosterCount(type);
 
-        public bool HasChance(PowerUpType type) => GetChances(type) > 0;
+        public bool HasChance(PowerUpType type) => EconomyHandler.HasBooster(type);
 
         /// <summary>Spends one chance. Returns false (and changes nothing) if none remain.</summary>
-        public bool TryConsume(PowerUpType type)
-        {
-            int current = GetChances(type);
-            if (current <= 0) return false;
-            SetChances(type, current - 1);
-            return true;
-        }
+        public bool TryConsume(PowerUpType type) => EconomyHandler.TryConsumeBooster(type);
 
         /// <summary>Adds one chance — used by the rewarded-ad reward and by hint refunds.</summary>
-        public void GrantChance(PowerUpType type)
-        {
-            SetChances(type, GetChances(type) + 1);
-        }
+        public void GrantChance(PowerUpType type) => EconomyHandler.GrantBooster(type);
 
-        private void SetChances(PowerUpType type, int value)
+        private void HandleBoosterChanged(PowerUpType type, int newCount)
         {
-            value = Mathf.Max(0, value);
-            PlayerPrefs.SetInt(KeyFor(type), value);
-            PlayerPrefs.Save();
-            OnChancesChanged?.Invoke(type, value);
-#if UNITY_EDITOR
-            Debug.Log($"[PowerUpManager] {type} chances = {value}", this);
-#endif
+            OnChancesChanged?.Invoke(type, newCount);
         }
-
-        private static string KeyFor(PowerUpType type) => KeyPrefix + type;
     }
 }
