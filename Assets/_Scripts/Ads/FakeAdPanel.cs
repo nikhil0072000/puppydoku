@@ -4,7 +4,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace PuppyPuzzle.PowerUps
+namespace PuppyPuzzle.Ads
 {
     /// <summary>
     /// Stand-in for a real rewarded-ad view. Shows a fullscreen overlay with a

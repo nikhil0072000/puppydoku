@@ -1,11 +1,11 @@
 using System;
 using UnityEngine;
 
-namespace PuppyPuzzle.PowerUps
+namespace PuppyPuzzle.Ads
 {
     /// <summary>
     /// Abstraction over a rewarded-ad provider so the real SDK (Unity Ads / AdMob)
-    /// can be dropped in later without touching power-up code. Callers get a reward
+    /// can be dropped in later without touching booster code. Callers get a reward
     /// callback on a completed watch and a skip callback if the player bailed.
     /// </summary>
     public interface IRewardedAdService
@@ -16,8 +16,8 @@ namespace PuppyPuzzle.PowerUps
     /// <summary>
     /// Placeholder ad provider used until a real SDK is integrated. Drives a simple
     /// <see cref="FakeAdPanel"/> (a fullscreen "Ad playing…" overlay). When the panel
-    /// closes after its countdown, the reward is granted. Singleton so any
-    /// PowerUpButton can reach it via <see cref="Instance"/>.
+    /// closes after its countdown, the reward is granted. Singleton so any caller
+    /// (boosters, revive, shop) can reach it via <see cref="Instance"/>.
     /// </summary>
     public class DummyRewardedAdService : MonoBehaviour, IRewardedAdService
     {

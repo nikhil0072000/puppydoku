@@ -63,6 +63,26 @@ public class LevelLoader : MonoBehaviour
     /// <summary>How many daily challenge levels exist in the config.</summary>
     public int DailyLevelCount => dailyLevels.Count;
 
+    /// <summary>
+    /// The player's Normal-progression level number (parsed from the current/saved
+    /// normal level's key). Used by booster unlock checks. Falls back to 1.
+    /// </summary>
+    public int CurrentNormalLevelNumber
+    {
+        get
+        {
+            LevelInfo normal = currentLevelInfo != null && currentLevelInfo.Type == LevelType.Normal
+                ? currentLevelInfo
+                : (currentListPosition >= 0 && currentListPosition < availableLevels.Count
+                    ? availableLevels[currentListPosition]
+                    : null);
+
+            if (normal != null && int.TryParse(normal.FileKey, out int number))
+                return number;
+            return 1;
+        }
+    }
+
     private bool levelLoaded = false;
     private int lastShownPercent = -1;
 

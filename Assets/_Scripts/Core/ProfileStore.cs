@@ -4,7 +4,7 @@ using UnityEngine;
 /// <summary>
 /// Single source of truth for the player's profile (name + icon index).
 /// Persists via PlayerPrefs, mirroring the project's other persistence
-/// (PowerUpManager, DailyChallengeManager). Raises <see cref="OnProfileChanged"/>
+/// (EconomyHandler, DailyChallengeManager). Raises <see cref="OnProfileChanged"/>
 /// so widgets like <see cref="UserProfile"/> refresh live after a save.
 /// </summary>
 public static class ProfileStore

@@ -1,6 +1,6 @@
 using System;
 using UnityEngine;
-using PuppyPuzzle.PowerUps;
+using PuppyPuzzle.Boosters;
 
 namespace PuppyPuzzle.Economy
 {
@@ -25,8 +25,8 @@ namespace PuppyPuzzle.Economy
     /// other persistence.
     ///
     /// Booster counts reuse the legacy "powerup_chances_&lt;Type&gt;" keys that
-    /// <see cref="PuppyPuzzle.PowerUps.PowerUpManager"/> wrote before this class
-    /// existed, so existing saves carry over with no migration.
+    /// the old PowerUpManager wrote before this class existed, so existing saves
+    /// carry over with no migration.
     /// </summary>
     public static class EconomyHandler
     {
@@ -41,7 +41,7 @@ namespace PuppyPuzzle.Economy
         public const int DefaultPawGems = 0;
 
         /// <summary>
-        /// Booster count a fresh save starts with. <see cref="PuppyPuzzle.PowerUps.PowerUpManager"/>
+        /// Booster count a fresh save starts with. <see cref="PuppyPuzzle.Boosters.BoosterController"/>
         /// overrides this from its inspector value on Awake.
         /// </summary>
         public static int DefaultBoosterCount { get; set; } = 5;
@@ -52,7 +52,7 @@ namespace PuppyPuzzle.Economy
         public static event Action<CurrencyType, int> OnCurrencyChanged;
 
         /// <summary>Raised whenever a booster's remaining count changes (type, newCount).</summary>
-        public static event Action<PowerUpType, int> OnBoosterChanged;
+        public static event Action<BoosterType, int> OnBoosterChanged;
 
         // ---- Currency: generic -----------------------------------------------
 
@@ -106,7 +106,7 @@ namespace PuppyPuzzle.Economy
         // ---- Boosters (power-up chances) -------------------------------------
 
         /// <summary>Remaining count for a booster (initialised to default on first read).</summary>
-        public static int GetBoosterCount(PowerUpType type)
+        public static int GetBoosterCount(BoosterType type)
         {
             string key = BoosterKey(type);
             if (!PlayerPrefs.HasKey(key))
@@ -117,10 +117,10 @@ namespace PuppyPuzzle.Economy
             return PlayerPrefs.GetInt(key, DefaultBoosterCount);
         }
 
-        public static bool HasBooster(PowerUpType type) => GetBoosterCount(type) > 0;
+        public static bool HasBooster(BoosterType type) => GetBoosterCount(type) > 0;
 
         /// <summary>Spends one booster. Returns false (and changes nothing) if none remain.</summary>
-        public static bool TryConsumeBooster(PowerUpType type)
+        public static bool TryConsumeBooster(BoosterType type)
         {
             int current = GetBoosterCount(type);
             if (current <= 0) return false;
@@ -129,7 +129,7 @@ namespace PuppyPuzzle.Economy
         }
 
         /// <summary>Adds boosters — rewarded-ad grants, hint refunds, shop purchases.</summary>
-        public static void GrantBooster(PowerUpType type, int count = 1)
+        public static void GrantBooster(BoosterType type, int count = 1)
         {
             if (count <= 0) return;
             SetBoosterCount(type, GetBoosterCount(type) + count);
@@ -148,7 +148,7 @@ namespace PuppyPuzzle.Economy
 #endif
         }
 
-        private static void SetBoosterCount(PowerUpType type, int value)
+        private static void SetBoosterCount(BoosterType type, int value)
         {
             value = Mathf.Max(0, value);
             PlayerPrefs.SetInt(BoosterKey(type), value);
@@ -163,6 +163,6 @@ namespace PuppyPuzzle.Economy
             type == CurrencyType.PawGems ? DefaultPawGems : DefaultCoins;
 
         private static string CurrencyKey(CurrencyType type) => CurrencyKeyPrefix + type;
-        private static string BoosterKey(PowerUpType type) => BoosterKeyPrefix + type;
+        private static string BoosterKey(BoosterType type) => BoosterKeyPrefix + type;
     }
 }

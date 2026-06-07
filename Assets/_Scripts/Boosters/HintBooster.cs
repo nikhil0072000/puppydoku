@@ -1,31 +1,32 @@
 using System.Collections;
 using System.Collections.Generic;
+using PuppyPuzzle.Economy;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace PuppyPuzzle.PowerUps
+namespace PuppyPuzzle.Boosters
 {
     /// <summary>
-    /// Bulb power-up: a progressive guided-deduction hint. Each press advances:
+    /// Bulb booster: a progressive guided-deduction hint. Each press advances:
     ///
     ///  1. ELIMINATION — finds the most-recently-revealed puppy that still has
     ///     UNMARKED forbidden cells (its row, column, diagonal touches) and previews
     ///     X marks only on those still-unmarked cells. Apply commits them; Cancel
-    ///     discards and refunds the chance. Pressing again walks back through older
+    ///     discards and refunds the booster. Pressing again walks back through older
     ///     puppies (recent → previous → initial/given).
     ///  2. DEDUCTION — once every revealed puppy's forbidden cells are already marked
     ///     (or no puppy is revealed yet), it outlines the cell where a puppy must go
     ///     (from the solver) in gold and shows guidance text. Dismiss to close.
     ///
-    /// A chance is consumed up front by PowerUpButton; <see cref="TryActivate"/>
+    /// The cost is consumed up front by BoosterController; <see cref="TryActivate"/>
     /// returns false (refunding it) only when there is genuinely nothing left to show.
     /// </summary>
-    public class HintController : PowerUpBase
+    public class HintBooster : Booster
     {
         private enum HintMode { Elimination, Deduction, Invalidation }
 
-        [Header("UI")]
+        [Header("Hint UI")]
         [Tooltip("Root of the hint overlay (dim backdrop + Apply/Cancel + tutorial text). Toggled on during the hint.")]
         [SerializeField] private GameObject hintOverlay;
         [SerializeField] private Button applyButton;
@@ -52,7 +53,7 @@ namespace PuppyPuzzle.PowerUps
         [Min(0f)]
         [SerializeField] private float stagger = 0.04f;
 
-        public override PowerUpType Type => PowerUpType.Hint;
+        public override BoosterType Type => BoosterType.Hint;
 
         // Cells touched this hint, so we can restore them on exit.
         private readonly List<Cell> _dimmedCells = new();
@@ -148,14 +149,14 @@ namespace PuppyPuzzle.PowerUps
                 return true;
             }
 
-            // 2) Everything derivable is marked (or no puppy yet) → point to where a puppy goes.
+            // 3) Everything derivable is marked (or no puppy yet) → point to where a puppy goes.
             if (gm.TryGetNextSolutionCell(out Vector2Int target))
             {
                 BeginDeduction(gm, target, w, h);
                 return true;
             }
 
-            // 3) Nothing left to teach → let the caller refund the chance.
+            // 4) Nothing left to teach → let the caller refund the cost.
             return false;
         }
 
@@ -279,10 +280,9 @@ namespace PuppyPuzzle.PowerUps
                     cell.ClearXPreview();
 
                 // Backing out of the eliminations/invalidation shouldn't cost the player.
-                if (PowerUpManager.Instance != null)
-                    PowerUpManager.Instance.GrantChance(PowerUpType.Hint);
+                EconomyHandler.GrantBooster(BoosterType.Hint);
             }
-            // Deduction mode is informational — dismissing keeps the chance spent.
+            // Deduction mode is informational — dismissing keeps the cost spent.
 
             ExitHint();
         }

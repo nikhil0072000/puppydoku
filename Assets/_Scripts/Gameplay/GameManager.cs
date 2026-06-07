@@ -1,7 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using PuppyPuzzle.PowerUps;
 
 public class GameManager : MonoBehaviour
 {
@@ -22,18 +21,10 @@ public class GameManager : MonoBehaviour
     private GameObject ResolvedPuppyPrefab => ThemeManager.Current?.puppyPrefab != null
         ? ThemeManager.Current.puppyPrefab
         : puppyPrefab;
-    [SerializeField] private HUDManager hudManager;
+    [SerializeField] private GameSceneUI gameSceneUI;
     [SerializeField] private GridAnimator gridAnimator;
 
-    [Header("Level Data")]
-    // Removed ScriptableObject level array. Levels are now loaded via LevelLoader (JSON).
-    // CurrentLevelData holds the loaded JSON data.
-    // private LevelData[] allLevels; // no longer used
-    // private int startLevelIndex = 0; // no longer used
-
-    // Level data
-    // No longer using ScriptableObject LevelData
-    // private LevelData currentLevel;
+    // Level data (loaded via LevelLoader from the LevelConfigSO JSONs).
     private int[,] zoneMap;
     private int[] zoneToColorIndex;          // NEW - mapping zoneID → colour index
     private int totalColorCount;             // NEW - number of unique colours (win target)
@@ -100,9 +91,9 @@ public class GameManager : MonoBehaviour
 
     void Update()
     {
-        if (isDailyMode && DailyChallengeManager.Instance != null && hudManager != null)
+        if (isDailyMode && DailyChallengeManager.Instance != null && gameSceneUI != null)
         {
-            hudManager.UpdateDailyTimer(DailyChallengeManager.Instance.ElapsedSeconds);
+            gameSceneUI.UpdateDailyTimer(DailyChallengeManager.Instance.ElapsedSeconds);
         }
     }
 
@@ -113,68 +104,7 @@ public class GameManager : MonoBehaviour
             Instance = null;
     }
 
-    /// <summary>
-    /// Load level data from the JSON based LevelDataModel.
-    /// </summary>
-    // public void LoadLevelFromJson(LevelDataModel model)
-    // {
-    //     // Convert safe data to internal structures
-    //     int size = model.GetSafeGridSize();
-    //     zoneMap = model.GetSafeColorData();
-
-    //     // Determine the highest zone ID used in the map
-    //     int maxZoneId = -1;
-    //     for (int y = 0; y < size; y++)
-    //         for (int x = 0; x < size; x++)
-    //             if (zoneMap[x, y] > maxZoneId) maxZoneId = zoneMap[x, y];
-
-    //     int colourCount = maxZoneId + 1;
-    //     Color[] colors = new Color[colourCount];
-
-    //     // Load colours from the GridConfig asset (instead of random HSV)
-    //     GridConfig config = Resources.Load<GridConfig>("GridConfig");
-    //     if (config == null)
-    //     {
-    //         Debug.LogError("GridConfig asset missing from Resources! Using white fallback.");
-    //     }
-
-    //     for (int i = 0; i < colourCount; i++)
-    //     {
-    //         if (config != null)
-    //             colors[i] = config.GetColor((ColorID)i); // cast int to ColorID enum
-    //         else
-    //             colors[i] = Color.white; // fallback
-    //     }
-
-    //     // In this representation, each zone ID directly maps to a colour index.
-    //     zoneToColorIndex = new int[colourCount];
-    //     for (int i = 0; i < colourCount; i++) zoneToColorIndex[i] = i;
-    //     totalColorCount = colourCount;
-
-    //     // Generate grid with colours
-    //     gridManager.GenerateGrid(size, zoneMap, colors);
-
-    //     placedPuppies.Clear();
-    //     lives = MaxLives;
-    //     gameOver = false;
-    //     LevelComplete = false;
-    //     LevelFailed = false;
-
-    //     // Place pre‑placed puppies from JSON
-    //     foreach (Vector2Int pos in model.GetSafePrePlaced())
-    //     {
-    //         Cell cell = gridManager.GetCell(pos.x, pos.y);
-    //         if (cell != null)
-    //         {
-    //             PuzzleObject pup = cell.PlacePuppy(ResolvedPuppyPrefab);
-    //             if (pup != null)
-    //             {
-    //                 cell.isGiven = true;
-    //                 placedPuppies.Add(pos);
-    //             }
-    //         }
-    //     }
-    // }
+    /// <summary>Load level data from the JSON based LevelDataModel.</summary>
     public void LoadLevelFromJson(LevelDataModel model)
     {
         StartCoroutine(LoadLevelWithAnimation(model));
@@ -254,15 +184,15 @@ public class GameManager : MonoBehaviour
             placementOrder.Add(pos);
         }
 
-        if (hudManager != null)
+        if (gameSceneUI != null)
         {
-            hudManager.UpdateHearts(lives);
-            hudManager.UpdateProgress(placedPuppies.Count, totalColorCount);
+            gameSceneUI.SetLives(lives);
+            gameSceneUI.UpdateProgress(placedPuppies.Count, totalColorCount);
         }
 
         isDailyMode = LevelLoader.Instance != null && LevelLoader.Instance.CurrentLevelType == LevelType.DailyChallenge;
 
-        if (hudManager != null)
+        if (gameSceneUI != null)
         {
             string label = "Level";
             if (isDailyMode)
@@ -274,21 +204,17 @@ public class GameManager : MonoBehaviour
                 label = LevelLoader.Instance.CurrentLevelButtonLabel;
             }
 
-            hudManager.SetLevelLabel(label);
+            gameSceneUI.SetLevelLabel(label);
         }
 
         if (isDailyMode)
         {
             DailyChallengeManager.Instance?.EnsureDailyState();
             DailyChallengeManager.Instance?.StartDailyTimer();
-            if (hudManager != null)
-                hudManager.SetDailyTimerVisible(true);
         }
-        else
-        {
-            if (hudManager != null)
-                hudManager.SetDailyTimerVisible(false);
-        }
+
+        if (gameSceneUI != null)
+            gameSceneUI.SetDailyTimerVisible(isDailyMode);
 
         Debug.Log($"Level loaded: {size}x{size}, unique colours: {totalColorCount}, pre-placed: {placedPuppies.Count}");
     }
@@ -322,16 +248,7 @@ public class GameManager : MonoBehaviour
 
         if (HasHiddenSolution && !IsHiddenSolutionCell(pos))
         {
-            cell.ShowPermanentRedCross();
-            PuppyRegistry.PlaySadOnAll();
-            lives--;
-            Debug.Log($"Invalid placement at {pos} (not part of hidden solution). Lives left: {lives}");
-
-            if (hudManager != null)
-                hudManager.UpdateHearts(lives);
-
-            if (lives <= 0)
-                Lose();
+            HandleInvalidPlacement(cell, pos, "not part of hidden solution");
             return;
         }
 
@@ -342,21 +259,27 @@ public class GameManager : MonoBehaviour
         }
         else
         {
-            // Invalid placement → permanent red cross (cell drives its own
-            // heart-break effect internally) + lose a life on the HUD.
-            cell.ShowPermanentRedCross();
-            PuppyRegistry.PlaySadOnAll();
-            lives--;
-            Debug.Log($"Invalid placement at {pos}. Lives left: {lives}");
-
-            if (hudManager != null)
-                hudManager.UpdateHearts(lives);
-
-            if (lives <= 0)
-            {
-                Lose();
-            }
+            HandleInvalidPlacement(cell, pos, "rule violation");
         }
+    }
+
+    /// <summary>
+    /// Shared wrong-move handling: permanent red cross (the cell drives its own
+    /// heart-break effect internally), sad puppies, one life lost on the HUD,
+    /// and the lose flow when no lives remain.
+    /// </summary>
+    private void HandleInvalidPlacement(Cell cell, Vector2Int pos, string reason)
+    {
+        cell.ShowPermanentRedCross();
+        PuppyRegistry.PlaySadOnAll();
+        lives--;
+        Debug.Log($"Invalid placement at {pos} ({reason}). Lives left: {lives}");
+
+        if (gameSceneUI != null)
+            gameSceneUI.SpendLife();
+
+        if (lives <= 0)
+            Lose();
     }
 
     /// <summary>
@@ -378,8 +301,8 @@ public class GameManager : MonoBehaviour
         pup.PlayWink();
         Debug.Log($"Puppy placed at {pos}");
 
-        if (hudManager != null)
-            hudManager.UpdateProgress(placedPuppies.Count, totalColorCount);
+        if (gameSceneUI != null)
+            gameSceneUI.UpdateProgress(placedPuppies.Count, totalColorCount);
 
         if (placedPuppies.Count == totalColorCount)
             Win();
@@ -535,8 +458,8 @@ public class GameManager : MonoBehaviour
         lives = 1;
         InputLocked = false;
 
-        if (hudManager != null)
-            hudManager.UpdateHearts(lives);
+        if (gameSceneUI != null)
+            gameSceneUI.SetLives(lives);
 
         Debug.Log("✨ Revive granted: one life restored. Resume play.");
     }
@@ -549,11 +472,4 @@ public class GameManager : MonoBehaviour
         if (PopupManager.Instance != null)
             PopupManager.Instance.ShowLose();
     }
-
-    // // Helper to convert hex to Color
-    // private Color HexToColor(string hex)
-    // {
-    //     ColorUtility.TryParseHtmlString(hex, out Color col);
-    //     return col;
-    // }
 }

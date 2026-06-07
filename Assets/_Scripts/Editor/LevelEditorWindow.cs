@@ -3,7 +3,6 @@ using UnityEditor;
 using System.IO;
 using System.Collections.Generic;
 using Newtonsoft.Json;
-using PuppyPuzzle.PowerUps;
 
 public class LevelEditorWindow : EditorWindow
 {

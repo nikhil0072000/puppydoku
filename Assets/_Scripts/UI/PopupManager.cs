@@ -1,4 +1,4 @@
-using PuppyPuzzle.PowerUps;
+using PuppyPuzzle.Ads;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
