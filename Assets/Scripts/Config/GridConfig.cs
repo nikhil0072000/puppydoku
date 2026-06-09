@@ -42,7 +42,8 @@ public class GridConfig : ScriptableObject
             new ColorEntry { id = ColorID.Blue,      color = new Color32(94, 136, 196, 255) },
             new ColorEntry { id = ColorID.Brown,     color = new Color32(180, 121, 82, 255) },
             new ColorEntry { id = ColorID.Orange,    color = new Color32(244, 161, 93, 255) },
-            new ColorEntry { id = ColorID.Gold,      color = new Color32(216, 179, 0, 255) }
+            new ColorEntry { id = ColorID.Gold,      color = new Color32(216, 179, 0, 255) },
+            new ColorEntry { id = ColorID.SteelBlue, color = new Color32(80, 117, 166, 255) }
         };
         return cfg;
     }

@@ -17,5 +17,7 @@ public enum ColorID
 
     Orange = 10,
 
-    Gold = 11
+    Gold = 11,
+
+    SteelBlue = 12
 }
