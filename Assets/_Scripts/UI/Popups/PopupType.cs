@@ -11,5 +11,8 @@ public enum PopupType
     LifePanel,
     UserProfilePanel,
     ShopPanel,
-    ProfilePopup
+    ProfilePopup,
+    Hint,
+    DailyChallengeVictory,
+    DailyChallengeFail
 }

@@ -5,12 +5,12 @@ using UnityEngine.UI;
 namespace PuppyPuzzle.Boosters
 {
     /// <summary>
-    /// Base for a triggerable booster (lives on its bottom-bar button GameObject).
+    /// Base for a booster button (lives on its bottom-bar button GameObject).
     /// Owns the UI pieces for every state; tuning (unlock level, coin price) comes
     /// from the <see cref="BoosterConfigSO"/> assigned to the BoosterController.
     /// <see cref="BoosterUIController"/> drives the visuals;
-    /// <see cref="BoosterController"/> runs the use/spend/ad flow and calls
-    /// <see cref="TryActivate"/>. Subclasses reference gameplay systems directly.
+    /// <see cref="BoosterController"/> runs the use/spend/ad flow and implements
+    /// each booster's effect — subclasses only declare their <see cref="Type"/>.
     /// </summary>
     [RequireComponent(typeof(Button))]
     public abstract class Booster : MonoBehaviour
@@ -55,9 +55,6 @@ namespace PuppyPuzzle.Boosters
             : BoosterConfigSO.FallbackCoinPrice;
         public Image Icon => icn;
         public Button Button => _button != null ? _button : (_button = GetComponent<Button>());
-
-        /// <summary>Runs the booster. Returns false if it could not act (caller refunds the cost).</summary>
-        public abstract bool TryActivate();
 
         /// <summary>
         /// Applies a full visual state. Exactly one of count/coins/ad shows while

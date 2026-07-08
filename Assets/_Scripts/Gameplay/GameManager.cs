@@ -248,27 +248,30 @@ public class GameManager : MonoBehaviour
 
         if (HasHiddenSolution && !IsHiddenSolutionCell(pos))
         {
-            HandleInvalidPlacement(cell, pos, "not part of hidden solution");
+            // Blink whichever rule (if any) the move also breaks; None skips the blink.
+            GameRuleType hiddenMissRule = GameRules.GetFirstViolation(pos, placedPuppies, zoneMap, zoneToColorIndex, verbose: false);
+            HandleInvalidPlacement(cell, pos, "not part of hidden solution", hiddenMissRule);
             return;
         }
 
         // Use colour-based rule check
-        if (GameRules.IsPlacementValid(pos, placedPuppies, zoneMap, zoneToColorIndex))
+        GameRuleType violatedRule = GameRules.GetFirstViolation(pos, placedPuppies, zoneMap, zoneToColorIndex);
+        if (violatedRule == GameRuleType.None)
         {
             PlacePuppyAt(pos);
         }
         else
         {
-            HandleInvalidPlacement(cell, pos, "rule violation");
+            HandleInvalidPlacement(cell, pos, "rule violation", violatedRule);
         }
     }
 
     /// <summary>
     /// Shared wrong-move handling: permanent red cross (the cell drives its own
     /// heart-break effect internally), sad puppies, one life lost on the HUD,
-    /// and the lose flow when no lives remain.
+    /// the rules-bar blink for the broken rule, and the lose flow when no lives remain.
     /// </summary>
-    private void HandleInvalidPlacement(Cell cell, Vector2Int pos, string reason)
+    private void HandleInvalidPlacement(Cell cell, Vector2Int pos, string reason, GameRuleType violatedRule = GameRuleType.None)
     {
         cell.ShowPermanentRedCross();
         PuppyRegistry.PlaySadOnAll();
@@ -276,7 +279,10 @@ public class GameManager : MonoBehaviour
         Debug.Log($"Invalid placement at {pos} ({reason}). Lives left: {lives}");
 
         if (gameSceneUI != null)
+        {
             gameSceneUI.SpendLife();
+            gameSceneUI.FlashRuleViolation(violatedRule);
+        }
 
         if (lives <= 0)
             Lose();
@@ -336,7 +342,21 @@ public class GameManager : MonoBehaviour
     public bool PlacePuppyAtIfValid(Vector2Int pos)
     {
         if (gameOver) return false;
+        if (!IsLegalPlacement(pos)) return false;
+
+        return PlacePuppyAt(pos);
+    }
+
+    /// <summary>
+    /// True if a puppy could legally be placed at <paramref name="pos"/> right now:
+    /// the cell is empty, part of the hidden solution when one exists, and the move
+    /// breaks no placement rule. Used by the Bulb hint's forced-line detection.
+    /// </summary>
+    public bool IsLegalPlacement(Vector2Int pos)
+    {
         if (zoneMap == null) return false;
+        if (pos.x < 0 || pos.x >= zoneMap.GetLength(0) || pos.y < 0 || pos.y >= zoneMap.GetLength(1))
+            return false;
 
         Cell cell = gridManager.GetCell(pos.x, pos.y);
         if (cell == null || cell.GetPuppy() != null) return false;
@@ -344,10 +364,7 @@ public class GameManager : MonoBehaviour
         if (HasHiddenSolution && !IsHiddenSolutionCell(pos))
             return false;
 
-        if (!GameRules.IsPlacementValid(pos, placedPuppies, zoneMap, zoneToColorIndex))
-            return false;
-
-        return PlacePuppyAt(pos);
+        return GameRules.IsPlacementValid(pos, placedPuppies, zoneMap, zoneToColorIndex, verbose: false);
     }
 
     /// <summary>
@@ -428,8 +445,7 @@ public class GameManager : MonoBehaviour
         if (LevelLoader.Instance != null && LevelLoader.Instance.CurrentLevelType == LevelType.Tutorial)
         {
             LevelLoader.Instance.MarkTutorialCompleted();
-            if (PopupManager.Instance != null)
-                PopupManager.Instance.ShowTutorialComplete();
+            ShowPopup(PopupType.Victory);
             return;
         }
 
@@ -438,13 +454,30 @@ public class GameManager : MonoBehaviour
             float elapsed = DailyChallengeManager.Instance != null ? DailyChallengeManager.Instance.ElapsedSeconds : 0f;
             DailyChallengeManager.Instance?.StopDailyTimer();
             DailyChallengeManager.Instance?.RecordDailyCompletion(elapsed);
-            if (PopupManager.Instance != null)
-                PopupManager.Instance.ShowDailyResult(elapsed, DailyChallengeManager.Instance.CompletedPercentile);
+            int percentile = DailyChallengeManager.Instance != null ? DailyChallengeManager.Instance.CompletedPercentile : 0;
+
+            if (PopupCanvasManager.Instance != null)
+            {
+                DailyChallengeVictoryPanel dailyPopup =
+                    PopupCanvasManager.Instance.Show<DailyChallengeVictoryPanel>(PopupType.DailyChallengeVictory);
+                if (dailyPopup != null) dailyPopup.Setup(elapsed, percentile);
+            }
+            else
+            {
+                Debug.LogError("PopupCanvasManager instance not found — cannot show the daily victory popup.");
+            }
             return;
         }
 
-        if (PopupManager.Instance != null)
-            PopupManager.Instance.ShowWin();
+        ShowPopup(PopupType.Victory);
+    }
+
+    private static void ShowPopup(PopupType type)
+    {
+        if (PopupCanvasManager.Instance != null)
+            PopupCanvasManager.Instance.Show(type);
+        else
+            Debug.LogError($"PopupCanvasManager instance not found — cannot show the {type} popup.");
     }
 
     public void ReviveAfterAd()
@@ -469,7 +502,9 @@ public class GameManager : MonoBehaviour
         gameOver = true;
         LevelFailed = true;
         Debug.Log("💀 Game Over - out of lives.");
-        if (PopupManager.Instance != null)
-            PopupManager.Instance.ShowLose();
+
+        bool isDaily = LevelLoader.Instance != null
+                       && LevelLoader.Instance.CurrentLevelType == LevelType.DailyChallenge;
+        ShowPopup(isDaily ? PopupType.DailyChallengeFail : PopupType.Defeat);
     }
 }

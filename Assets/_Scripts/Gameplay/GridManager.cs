@@ -108,10 +108,10 @@ public class GridManager : MonoBehaviour
     }
 
     /// <summary>
-    /// Detects the cell's authored sprite size in world units by reading the
-    /// SpriteRenderer's bounds on the prefab, then correcting for its localScale.
-    /// Falls back to the Cell script's <see cref="Cell.restingScale"/> if no
-    /// SpriteRenderer is found.
+    /// Detects the cell's visible size in world units. Prefers the active theme's
+    /// cellBackgroundSprite (the sprite Cell.Init actually shows), falling back to
+    /// the prefab's BG sprite, then to a default derived from
+    /// <see cref="Cell.RestingScale"/>.
     /// </summary>
     private float GetAuthoredCellSize()
     {
@@ -119,7 +119,7 @@ public class GridManager : MonoBehaviour
             return manualCellSizeOverride;
 
         SpriteRenderer sr = cellPrefab.GetComponent<SpriteRenderer>();
-        if (sr != null)
+        if (sr != null && sr.bounds.size.x > 0f)
         {
             return sr.bounds.size.x;
         }
@@ -129,9 +129,20 @@ public class GridManager : MonoBehaviour
         {
             float prefabScale = cellScript.RestingScale.x;
             if (prefabScale <= 0f) prefabScale = 0.3f;
-            SpriteRenderer zoneOverlay = cellPrefab.transform.Find("ZoneOverlay")?.GetComponent<SpriteRenderer>();
-            if (zoneOverlay != null && zoneOverlay.sprite != null)
-                return zoneOverlay.sprite.bounds.size.x * prefabScale;
+            Transform bgChild = cellPrefab.transform.Find("BG");
+            SpriteRenderer bgRenderer = bgChild != null ? bgChild.GetComponent<SpriteRenderer>() : null;
+
+            // Cell.Init swaps the BG sprite for the theme's cellBackgroundSprite at
+            // runtime, so measure the theme sprite when one is set — the prefab's
+            // authored BG sprite can be a different size, which would make the
+            // fitted scale wrong and the cells overlap.
+            ThemeData theme = ThemeManager.Current;
+            Sprite bgSprite = (theme != null && theme.cellBackgroundSprite != null)
+                ? theme.cellBackgroundSprite
+                : (bgRenderer != null ? bgRenderer.sprite : null);
+
+            if (bgSprite != null && bgChild != null)
+                return bgSprite.bounds.size.x * bgChild.localScale.x * prefabScale;
             return prefabScale * 2.25f;
         }
 

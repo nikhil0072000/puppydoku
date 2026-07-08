@@ -42,6 +42,16 @@ namespace PuppyPuzzle.Boosters
             RefreshAll();
         }
 
+        private void Start()
+        {
+            // OnEnable can run before BoosterController.Awake during scene load
+            // (sibling init order is not guaranteed), in which case the first
+            // RefreshAll saw a null Instance and fell back to unlock level 1 /
+            // fallback prices. Start runs after every Awake, so refresh again
+            // with the real config values.
+            RefreshAll();
+        }
+
         private void OnDisable()
         {
             EconomyHandler.OnBoosterChanged -= HandleBoosterChanged;

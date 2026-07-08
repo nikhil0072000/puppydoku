@@ -52,7 +52,7 @@ public class GridAnimator : MonoBehaviour
             finalScales[i] = cell.transform.localScale;   // prefab scale (e.g. 0.3)
             cell.transform.localScale = Vector3.zero;
 
-            SpriteRenderer overlay = cell.ZoneOverlay;
+            SpriteRenderer overlay = cell.Bg;
             if (overlay != null)
             {
                 Color c = overlay.color;
@@ -75,7 +75,7 @@ public class GridAnimator : MonoBehaviour
             t.DOScale(finalScales[i], scaleDuration).SetEase(scaleEase)
              .SetLink(cell.gameObject, LinkBehaviour.KillOnDestroy);
 
-            SpriteRenderer overlay = cell.ZoneOverlay;
+            SpriteRenderer overlay = cell.Bg;
             if (overlay != null)
                 overlay.DOFade(1f, scaleDuration)
                        .SetLink(cell.gameObject, LinkBehaviour.KillOnDestroy);

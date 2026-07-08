@@ -33,7 +33,6 @@ public class InputManager : MonoBehaviour
     private Cell swipeStartCell;
     private Cell lastSwipedCell;
     private readonly HashSet<Cell> swipeCells = new();
-    private readonly List<Cell> swipeCellsOrdered = new();
 
     void Awake()
     {
@@ -78,7 +77,6 @@ public class InputManager : MonoBehaviour
         swipeStartCell = null;
         lastSwipedCell = null;
         swipeCells.Clear();
-        swipeCellsOrdered.Clear();
     }
 
     void Update()
@@ -88,7 +86,7 @@ public class InputManager : MonoBehaviour
 
         Vector2 mousePos = Mouse.current.position.ReadValue();
 
-        if (Mouse.current.leftButton.wasPressedThisFrame)
+        if (!pointerDown && Mouse.current.leftButton.wasPressedThisFrame)
         {
             ProcessPointerDown(mousePos);
         }
@@ -144,14 +142,15 @@ public class InputManager : MonoBehaviour
         swipeStartCell = GetCellAtScreenPosition(screenPosition);
         lastSwipedCell = null;
         swipeCells.Clear();
-        swipeCellsOrdered.Clear();
 
         ProcessPointer(screenPosition);
     }
 
     private void ProcessPointerMove(Vector2 screenPosition)
     {
-        if (!pointerDown || !swipeEnabled || swipeStartCell == null)
+        // No swipeStartCell requirement: a glide may begin on the gap between
+        // cells (or just outside the grid) and still mark the cells it crosses.
+        if (!pointerDown || !swipeEnabled)
             return;
 
         if (!swipeActive && Vector2.Distance(pointerDownPosition, screenPosition) >= swipeActivationDistance)
@@ -167,16 +166,12 @@ public class InputManager : MonoBehaviour
             return;
 
         if (swipeActive)
-        {
-            AddSwipeCellAtPosition(screenPosition);
-            ApplySwipe();
-        }
+            AddSwipeCellAtPosition(screenPosition); // catch the cell under the release point
 
         pointerDown = false;
         swipeActive = false;
         lastSwipedCell = null;
         swipeCells.Clear();
-        swipeCellsOrdered.Clear();
     }
 
     private void BeginSwipe()
@@ -196,7 +191,14 @@ public class InputManager : MonoBehaviour
             return;
 
         if (swipeCells.Add(cell))
-            swipeCellsOrdered.Add(cell);
+        {
+            // Apply the mark LIVE as the pointer glides over the cell (mouse drag and
+            // touch share this path). A swipe only ADDS marks — already-marked cells
+            // are left untouched; single tap handles unmarking.
+            CancelPendingTap(cell);
+            if (!cell.IsXMarked)
+                cell.ToggleXMark();
+        }
 
         lastSwipedCell = cell;
     }
@@ -230,17 +232,6 @@ public class InputManager : MonoBehaviour
         {
             StopCoroutine(pending);
             pendingTaps.Remove(cell);
-        }
-    }
-
-    private void ApplySwipe()
-    {
-        foreach (Cell cell in swipeCellsOrdered)
-        {
-            if (cell == null)
-                continue;
-
-            cell.ToggleXMark();
         }
     }
 

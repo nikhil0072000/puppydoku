@@ -26,8 +26,16 @@ namespace PuppyPuzzle.Boosters
 
         public const int FallbackUnlockLevel = 1;
         public const int FallbackCoinPrice = 100;
+        public const int FallbackInitialBoosters = 5;
+
+        [Tooltip("Booster count a fresh save starts with, applied to every booster type.")]
+        [Min(0)]
+        [SerializeField] private int initialBoosters = FallbackInitialBoosters;
 
         [SerializeField] private BoosterEntry[] entries;
+
+        /// <summary>Booster count a fresh save starts with (seeds EconomyHandler on first read).</summary>
+        public int InitialBoosters => initialBoosters;
 
         public bool TryGetEntry(BoosterType type, out BoosterEntry entry)
         {

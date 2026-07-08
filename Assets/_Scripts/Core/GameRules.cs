@@ -14,6 +14,20 @@ public static class GameRules
                                         int[] zoneToColorIndex,
                                         bool verbose = true)
     {
+        return GetFirstViolation(pos, occupiedPositions, zoneMap, zoneToColorIndex, verbose) == GameRuleType.None;
+    }
+
+    /// <summary>
+    /// Like <see cref="IsPlacementValid"/>, but reports WHICH rule the placement
+    /// breaks (the first one found), so the rules-bar UI can blink it.
+    /// Returns <see cref="GameRuleType.None"/> for a legal placement.
+    /// </summary>
+    public static GameRuleType GetFirstViolation(Vector2Int pos,
+                                                 HashSet<Vector2Int> occupiedPositions,
+                                                 int[,] zoneMap,
+                                                 int[] zoneToColorIndex,
+                                                 bool verbose = true)
+    {
         int targetZone = zoneMap[pos.x, pos.y];
         int targetColor = zoneToColorIndex[targetZone];
 
@@ -26,32 +40,32 @@ public static class GameRules
             if (occColor == targetColor)
             {
                 if (verbose) Debug.Log($"Invalid: colour already used at {occupied}");
-                return false;
+                return GameRuleType.OnePerColor;
             }
 
             // 2. Row constraint
             if (occupied.x == pos.x)
             {
                 if (verbose) Debug.Log($"Invalid: same row as {occupied}");
-                return false;
+                return GameRuleType.OnePerRowAndColumn;
             }
 
             // 3. Column constraint
             if (occupied.y == pos.y)
             {
                 if (verbose) Debug.Log($"Invalid: same column as {occupied}");
-                return false;
+                return GameRuleType.OnePerRowAndColumn;
             }
 
             // 4. Diagonal touch constraint
             if (Mathf.Abs(occupied.x - pos.x) == 1 && Mathf.Abs(occupied.y - pos.y) == 1)
             {
                 if (verbose) Debug.Log($"Invalid: diagonal touch with {occupied}");
-                return false;
+                return GameRuleType.CannotTouch;
             }
         }
 
-        return true;
+        return GameRuleType.None;
     }
 
     /// <summary>

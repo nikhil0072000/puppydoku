@@ -37,6 +37,10 @@ public class GameSceneUI : MonoBehaviour
     [Tooltip("Opens the Settings popup.")]
     [SerializeField] private Button settingsBtn;
 
+    [Header("Game Rules")]
+    [Tooltip("Rules bar under the HUD — blinks the broken rule's outline on a wrong move.")]
+    [SerializeField] private GameRulesHandler rulesHandler;
+
     // Last MM:SS pushed to the timer label, so we only format + reassign on a real change
     // (UpdateDailyTimer is called every frame from GameManager.Update).
     private int _lastTimerMinutes = -1;
@@ -126,6 +130,13 @@ public class GameSceneUI : MonoBehaviour
     {
         if (livesManager != null)
             livesManager.SpendLife();
+    }
+
+    /// <summary>Blinks the rules-bar tab for the rule a wrong move broke.</summary>
+    public void FlashRuleViolation(GameRuleType rule)
+    {
+        if (rulesHandler != null)
+            rulesHandler.FlashViolatedRule(rule);
     }
 
     public void UpdateProgress(int placed, int total)

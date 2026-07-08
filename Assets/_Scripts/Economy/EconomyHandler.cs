@@ -42,7 +42,7 @@ namespace PuppyPuzzle.Economy
 
         /// <summary>
         /// Booster count a fresh save starts with. <see cref="PuppyPuzzle.Boosters.BoosterController"/>
-        /// overrides this from its inspector value on Awake.
+        /// overrides this on Awake from its BoosterConfigSO's InitialBoosters value.
         /// </summary>
         public static int DefaultBoosterCount { get; set; } = 5;
 
@@ -105,16 +105,15 @@ namespace PuppyPuzzle.Economy
 
         // ---- Boosters (power-up chances) -------------------------------------
 
-        /// <summary>Remaining count for a booster (initialised to default on first read).</summary>
+        /// <summary>
+        /// Remaining count for a booster. The default is applied lazily (no eager
+        /// PlayerPrefs write): a read that happens before BoosterController.Awake
+        /// pushes the config value must not bake the wrong default into the save.
+        /// The key is first written when the count actually changes (consume/grant).
+        /// </summary>
         public static int GetBoosterCount(BoosterType type)
         {
-            string key = BoosterKey(type);
-            if (!PlayerPrefs.HasKey(key))
-            {
-                PlayerPrefs.SetInt(key, DefaultBoosterCount);
-                PlayerPrefs.Save();
-            }
-            return PlayerPrefs.GetInt(key, DefaultBoosterCount);
+            return PlayerPrefs.GetInt(BoosterKey(type), DefaultBoosterCount);
         }
 
         public static bool HasBooster(BoosterType type) => GetBoosterCount(type) > 0;
